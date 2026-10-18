@@ -232,7 +232,15 @@ picker (setting "Opens"), through `invokeShortcut` on KWin's global shortcut
 component. It provides `org.kde.plasma.launchermenu`, so Plasma's
 "Activate Application Launcher" shortcut (`Alt+F1`) opens the grid too.
 Add it by hand from "Add Widgets…" (Application Launchers) if you don't use
-`make-default.sh`.
+`make-default.sh`. Its settings page and right-click menu have
+"Overview Settings…", which opens the effect's settings dialog directly:
+
+```sh
+kcmshell6 kwin/effects/configs/kcm_kwin4_genericscripted --args 'kgnomeoverview KWin/Effect'
+```
+
+In System Settings the effect is "GNOME-style Overview" under Window
+Management > Desktop Effects, section "Window Management".
 
 plasmashell caches an applet's QML by URL for the whole session, like KWin
 does for effects: after `kpackagetool6 --upgrade` a running plasmashell keeps
@@ -274,13 +282,18 @@ Differences:
   xwaylandvideobridge) don't keep a desktop alive.
 - No removals for 10 s after the effect loads (session start, other scripts
   placing windows), and the tracker pauses itself (journal: "dynamic
-  workspaces paused") if desktops change more than 24 times in 10 s, e.g.
-  when another script enforces a fixed count. Windows on all desktops (how
+  workspaces paused") if another party keeps undoing its changes (more than
+  24 automatic changes and at least 12 outside desktop changes in 10 s, e.g.
+  a script that enforces a fixed count); it resumes after a minute without
+  outside changes. Settings changes, reloads and your own drops/closes can't
+  trip it, and the check re-runs on load, when the overview opens, after a
+  settings change and every 30 s. Windows on all desktops (how
   the virtualdesktopsonlyonprimary script parks other screens) never keep a
   desktop alive, and a desktop is only removed when no window at all is on
   it, so tilers like Krohnkite don't lose windows.
 - Default desktop names ("Desktop N") are renumbered after a change.
-- The × to close a desktop is not in GNOME.
+- The × to close a desktop and the "+" on the trailing empty thumbnail are
+  not in GNOME.
 
 ## Development helpers
 
