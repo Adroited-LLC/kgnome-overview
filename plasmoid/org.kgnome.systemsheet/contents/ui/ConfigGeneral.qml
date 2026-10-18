@@ -14,6 +14,8 @@ KCM.SimpleKCM {
     property string cfg_accentSource
     property string cfg_styleVariantDefault
     property string cfg_accentSourceDefault
+    property alias cfg_sheetRadius: radiusSpin.value
+    property int cfg_sheetRadiusDefault
     // set by plasmashell's config dialog for every key; declared so it doesn't warn
     property string cfg_compactStyleDefault
     property bool cfg_showUserHeaderDefault
@@ -61,6 +63,17 @@ KCM.SimpleKCM {
             ]
             Component.onCompleted: currentIndex = Math.max(0, indexOfValue(cfg_accentSource))
             onActivated: cfg_accentSource = currentValue
+        }
+        QQC2.SpinBox {
+            id: radiusSpin
+            Kirigami.FormData.label: i18n("Sheet corner radius:")
+            from: 0; to: 48
+            textFromValue: (v) => v === 0 ? i18n("Square (Plasma)") : i18np("%1 px", "%1 px", v)
+        }
+        QQC2.Label {
+            text: i18n("GNOME 50 uses 36 px.")
+            font: Kirigami.Theme.smallFont
+            opacity: 0.7
         }
         Item { Kirigami.FormData.isSection: true }
         QQC2.CheckBox {

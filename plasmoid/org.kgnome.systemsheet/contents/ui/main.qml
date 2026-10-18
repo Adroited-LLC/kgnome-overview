@@ -77,6 +77,7 @@ PlasmoidItem {
         showDarkStyle: Plasmoid.configuration.showDarkStyle
         styleVariant: Plasmoid.configuration.styleVariant
         accentSource: Plasmoid.configuration.accentSource
+        sheetRadius: Plasmoid.configuration.sheetRadius
         drawBackground: !root.inTray
         isOpen: root.expanded
         onScreenshot: root.closeThen(() => root.run("spectacle -r"), 300)

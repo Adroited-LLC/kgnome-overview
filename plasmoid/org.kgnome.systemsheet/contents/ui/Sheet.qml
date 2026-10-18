@@ -25,6 +25,8 @@ Rectangle {
     property string styleVariant: "auto"
     // "gnome": GNOME's default blue #3584e4; "plasma": the KDE accent colour
     property string accentSource: "gnome"
+    // card corner radius at 1x; 0 = square like other Plasma popups, GNOME: 36
+    property int sheetRadius: 0
     readonly property real u: Kirigami.Units.gridUnit / 18
     readonly property var pal: G.palette(styleVariant === "dark" || (styleVariant !== "light" && G.isDark(Kirigami.Theme.backgroundColor)),
                                          accentSource === "plasma" ? Kirigami.Theme.highlightColor : G.gnomeAccent)
@@ -83,8 +85,8 @@ Rectangle {
         anchors.topMargin: -frameRef.margins.top
         anchors.bottomMargin: -frameRef.margins.bottom
         color: sheet.pal.sheetBg
-        radius: G.sheetRadius * sheet.u
-        border.width: 1
+        radius: sheet.sheetRadius * sheet.u
+        border.width: sheet.sheetRadius > 0 ? 1 : 0
         border.color: sheet.pal.sheetBorder
     }
     Keys.onEscapePressed: powerMenuOpen ? (powerMenuOpen = false) : closeRequested()
