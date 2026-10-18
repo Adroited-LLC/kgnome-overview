@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- `BackgroundTint` setting ("Background tint" in the settings dialog,
+  0-100 %, default 30): strength of the dark overlay over the blurred
+  wallpaper; only used with `BlurBackground`.
+
+### Changed
+- Lighter overview background over the blur (tint 30 % instead of 88 %),
+  and `Esc` in the app grid closes the overview directly instead of going
+  back to the window picker (differs from GNOME). PR #1 by @HUSTLRX.
+
 ### Fixed
 - A single Meta press opened the app grid instead of the window picker.
   Plasma 6 sends Meta alone to plasmashell's "Activate Application
