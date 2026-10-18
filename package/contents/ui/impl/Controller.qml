@@ -35,8 +35,12 @@ QtObject {
     readonly property real backgroundTint: (cfg && cfg.BackgroundTint !== undefined && cfg.BackgroundTint !== null
                                             && !isNaN(Number(cfg.BackgroundTint)))
                                            ? Math.max(0, Math.min(100, Number(cfg.BackgroundTint))) / 100 : 0.30
+    // FavoriteApps is only a fallback without FavoritesClient (or without
+    // Plasma's Kicker module); FavoritesSeeded, written by an older version
+    // that kept the dash's own list there, is ignored.
     readonly property var configFavoriteIds: (cfg && cfg.FavoriteApps) ? cfg.FavoriteApps.filter(s => s.length > 0) : []
-    // dash favourites: shared with Kickoff (Favorites.qml) or FavoriteApps
+    // dash favourites: KDE's Favorites shared with Kickoff/Kicker
+    // (KActivities, Favorites.qml), else FavoriteApps
     readonly property string favoritesClient: (cfg && cfg.FavoritesClient) ? String(cfg.FavoritesClient) : ""
     property QtObject sharedFavorites: null
     readonly property bool favoritesShared: sharedFavorites !== null && sharedFavorites.ready
@@ -44,6 +48,20 @@ QtObject {
     readonly property bool hideFavoritesInGrid: cfg ? cfg.HideFavoritesInGrid !== false : true
     readonly property int dashIconSize: (cfg && cfg.DashIconSize > 0) ? cfg.DashIconSize : 64
     readonly property int searchFocusReturnMs: (cfg && cfg.SearchFocusReturnMs !== undefined) ? cfg.SearchFocusReturnMs : 250
+    // Unpinning in the dash also unpins the app from the panel task
+    // manager(s) (TaskbarLaunchers.qml); pinning only adds to the favourites.
+    readonly property bool unpinFromTaskManager: cfg ? cfg.UnpinFromTaskManager !== false : true
+    property QtObject taskbarLaunchers: null
+    function ensureTaskbarLaunchers() {
+        if (!taskbarLaunchers) {
+            const c = Qt.createComponent(Qt.resolvedUrl("TaskbarLaunchers.qml"));
+            taskbarLaunchers = c.status === Component.Ready ? c.createObject(effect) : null;
+            if (!taskbarLaunchers) {
+                console.warn("kgnome-overview: task manager launchers unavailable:", c.errorString().trim());
+            }
+        }
+        return taskbarLaunchers;
+    }
     onFavoritesClientChanged: createSharedFavorites()
     function createSharedFavorites() {
         if (sharedFavorites && sharedFavorites.client === favoritesClient) {
@@ -103,8 +121,9 @@ QtObject {
     }
 
     // Favourites (GNOME AppFavorites: addFavoriteAtPos, moveFavoriteToPos,
-    // removeFavorite). Without a shared launcher list the current dash is
-    // copied into FavoriteApps on the first change.
+    // removeFavorite) in KDE's Favorites (shared with Kickoff/Kicker, so pin,
+    // unpin and reorder show there live). Without a shared launcher list the
+    // current dash is copied into FavoriteApps on the first change.
     function normalizedFavorite(storageId) {
         return storageId.endsWith(".desktop") ? storageId : storageId + ".desktop";
     }
@@ -138,11 +157,15 @@ QtObject {
         const id = normalizedFavorite(storageId);
         if (favoritesShared) {
             sharedFavorites.remove(id);
-            return;
+        } else {
+            const ids = currentFavoriteList().filter(x => x !== id);
+            // an empty list means "launcher favourites"; keep one placeholder entry
+            writeConfig("FavoriteApps", ids.length > 0 ? ids : ["none.desktop"]);
         }
-        const ids = currentFavoriteList().filter(x => x !== id);
-        // an empty list means "launcher favourites"; keep one placeholder entry
-        writeConfig("FavoriteApps", ids.length > 0 ? ids : ["none.desktop"]);
+        // asynchronous; a no-op if the app isn't pinned in a task manager
+        if (unpinFromTaskManager && ensureTaskbarLaunchers()) {
+            taskbarLaunchers.remove(id);
+        }
     }
     // GNOME AppMenu "Quit": close every window of the app
     function quitApp(storageId) {

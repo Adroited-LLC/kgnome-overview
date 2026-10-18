@@ -14,6 +14,10 @@
             <label>KActivities favourites client shared with the launcher, e.g. org.kde.plasma.kickoff.favorites.instance-N, N = the Kickoff applet id (set by install.sh). Empty: use FavoriteApps.</label>
             <default></default>
         </entry>
+        <entry name="UnpinFromTaskManager" type="Bool">
+            <label>Unpinning an app in the dash also removes it from the pinned launchers of the panel task manager(s), live through plasmashell. Pinning never adds to the task manager.</label>
+            <default>true</default>
+        </entry>
         <entry name="HideFavoritesInGrid" type="Bool">
             <label>Like GNOME, don't show dash favourites in the app grid and folders.</label>
             <default>true</default>
