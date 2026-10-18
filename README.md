@@ -82,8 +82,11 @@ Every run of `make-default.sh` first copies `kwinrc`, `kglobalshortcutsrc`,
 `kactivitymanagerdrc` to `backup/<timestamp>/` (git-ignored). The steps, all
 live in the running session (no logout, no plasmashell or KWin restart):
 
-- `meta`: Meta on its own opens the overview (kwinrc
-  `[ModifierOnlyShortcuts] Meta=…,invokeShortcut,Cycle GNOME Overview`).
+- `meta`: Meta on its own opens the overview. Plasma 6 handles Meta alone in
+  kglobalaccel, where it is the default first key of plasmashell's "Activate
+  Application Launcher" (KWin no longer reads kwinrc `[ModifierOnlyShortcuts]`).
+  The step gives `Meta` to `Cycle GNOME Overview` and leaves the launcher
+  `Alt+F1`; `restore-defaults.sh` and `uninstall.sh` give Meta back.
 - `corner`: frees the built-in Overview's screen edges and sets `HotCorner=1`.
 - `builtin`: `[Plugins] overviewEnabled=false`, unloads Plasma's Overview, and
   moves `Meta+W` from its `Overview` shortcut to `Toggle GNOME Overview`
@@ -131,7 +134,7 @@ scripts/restore-defaults.sh   # if you made it the default
 | Toggle app grid           | `Meta+Shift+O` | `Toggle GNOME App Grid`  |
 | Hot corner                | top left       | `HotCorner` setting      |
 | Touchpad swipe up / down  | 4 fingers      | `GestureFingers` setting |
-| Meta on its own           | after make-default | `Cycle GNOME Overview` (kwinrc `[ModifierOnlyShortcuts]`) |
+| Meta on its own           | after make-default | `Cycle GNOME Overview` (key `Meta`, taken off plasmashell's "Activate Application Launcher") |
 | `Meta+W`                  | after make-default | second key of `Toggle GNOME Overview` |
 | Panel Show Apps button / `Alt+F1` | after make-default | plasmoid `org.kgnome.overview.showapps` |
 

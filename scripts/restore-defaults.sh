@@ -46,13 +46,19 @@ if [[ "${RESTORE_STATSRC:-0}" == 1 && -f "$SRC/kactivitymanagerd-statsrc" ]]; th
 fi
 
 # live shortcut registry (kglobalaccel lives in KWin): Meta+W back to the
-# built-in Overview, ours back to Meta+O only
+# built-in Overview, ours back to Meta+O only, Meta back to the launcher
 keys() {
     gdbus call --session --dest org.kde.kglobalaccel --object-path /kglobalaccel \
         --method org.kde.KGlobalAccel.setForeignShortcutKeys "['kwin','$1','KWin','$2']" "$3" >/dev/null || true
 }
 keys "Toggle GNOME Overview" "Toggle GNOME Overview" "[([268435535, 0, 0, 0],)]"
 keys "Overview" "Toggle Overview" "[([268435543, 0, 0, 0],)]"
+# Meta alone back to plasmashell's launcher (Meta, Alt+F1), off our cycle
+keys "Cycle GNOME Overview" "Cycle GNOME Overview (window picker, app grid, close)" "@a(ai) []"
+gdbus call --session --dest org.kde.kglobalaccel --object-path /kglobalaccel \
+    --method org.kde.KGlobalAccel.setForeignShortcutKeys \
+    "['plasmashell','activate application launcher','plasmashell','Activate Application Launcher']" \
+    "[([16777250, 0, 0, 0],), ([150994992, 0, 0, 0],)]" >/dev/null || true
 
 "$QDBUS" org.kde.KWin /KWin reconfigure >/dev/null
 "$QDBUS" org.kde.KWin /Effects loadEffect overview >/dev/null || true

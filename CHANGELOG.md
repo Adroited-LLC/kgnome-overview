@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- A single Meta press opened the app grid instead of the window picker.
+  Plasma 6 sends Meta alone to plasmashell's "Activate Application
+  Launcher" (kglobalaccel), which the Show Apps button answers with the app
+  grid; the kwinrc `[ModifierOnlyShortcuts]` entry written by 0.1.0 is not
+  read by KWin 6. `make-default` now binds `Meta` to `Cycle GNOME Overview`
+  and keeps `Alt+F1` on the launcher; restore/uninstall undo it. Run
+  `scripts/make-default.sh meta` once after updating.
+- Overview triggers arriving within 150 ms of each other (one key press
+  reaching the effect twice) count once; triggers are logged to the journal.
+
 ## [0.1.0] - 2026-10-18
 
 First public release.

@@ -28,14 +28,42 @@ reconfigure() {
     "$QDBUS" org.kde.KWin /KWin reconfigure >/dev/null
 }
 
+# kglobalaccel helpers (key codes are Qt key combinations)
+META_W=268435543   # Qt::META | Qt::Key_W
+META_O=268435535   # Qt::META | Qt::Key_O
+KEY_META=16777250  # Qt::Key_Meta: Meta pressed and released on its own
+ALT_F1=150994992   # Qt::ALT | Qt::Key_F1
+set_foreign_keys() {  # <component> <action> <component friendly> <action friendly> <gvariant a(ai)>
+    gdbus call --session --dest org.kde.kglobalaccel --object-path /kglobalaccel \
+        --method org.kde.KGlobalAccel.setForeignShortcutKeys "['$1','$2','$3','$4']" "$5" >/dev/null
+}
+get_foreign_keys() {
+    gdbus call --session --dest org.kde.kglobalaccel --object-path /kglobalaccel \
+        --method org.kde.KGlobalAccel.shortcutKeys "['$1','$2','$3','$4']"
+}
+set_keys() { set_foreign_keys kwin "$1" KWin "$2" "$3"; }
+get_keys() { get_foreign_keys kwin "$1" KWin "$2"; }
+
 # 1. Meta alone opens our overview (instead of Kickoff): "Cycle GNOME
 #    Overview" = window picker, app grid, close (MetaCycle=toggle: GNOME)
 step_meta() {
     echo ">> Meta key -> Cycle GNOME Overview"
-    kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta \
-        "org.kde.kglobalaccel,/component/kwin,org.kde.kglobalaccel.Component,invokeShortcut,Cycle GNOME Overview"
+    # Plasma 6 handles Meta on its own in kglobalaccel: by default it is the
+    # first key of plasmashell's "Activate Application Launcher", which with
+    # the Show Apps button on the panel opens the app grid. KWin no longer
+    # reads kwinrc [ModifierOnlyShortcuts]. So: Meta off the launcher (Alt+F1
+    # stays), Meta onto our cycle action.
+    set_foreign_keys plasmashell "activate application launcher" plasmashell \
+        "Activate Application Launcher" "[([$ALT_F1, 0, 0, 0],)]"
+    set_keys "Cycle GNOME Overview" "Cycle GNOME Overview (window picker, app grid, close)" \
+        "[([$KEY_META, 0, 0, 0],)]"
+    # written by kgnome-overview 0.1.0, unused by KWin 6
+    if kreadconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta | grep -q "GNOME Overview"; then
+        kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta --delete
+    fi
     reconfigure
-    echo "   $(kreadconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta)"
+    echo "   launcher keys: $(get_foreign_keys plasmashell "activate application launcher" plasmashell "Activate Application Launcher")"
+    echo "   Cycle GNOME Overview keys: $(get_keys "Cycle GNOME Overview" "Cycle GNOME Overview (window picker, app grid, close)")"
 }
 
 # 2. Hot corner: free the built-in Overview's edges, top-left goes to ours
@@ -57,17 +85,6 @@ step_corner() {
          "ours HotCorner=$(kreadconfig6 --file kwinrc --group "$GROUP" --key HotCorner)"
 }
 
-# kglobalaccel helpers (key codes are Qt key combinations)
-META_W=268435543   # Qt::META | Qt::Key_W
-META_O=268435535   # Qt::META | Qt::Key_O
-set_keys() {  # set_keys <action> <friendly> <gvariant a(ai)>
-    gdbus call --session --dest org.kde.kglobalaccel --object-path /kglobalaccel \
-        --method org.kde.KGlobalAccel.setForeignShortcutKeys "['kwin','$1','KWin','$2']" "$3" >/dev/null
-}
-get_keys() {
-    gdbus call --session --dest org.kde.kglobalaccel --object-path /kglobalaccel \
-        --method org.kde.KGlobalAccel.shortcutKeys "['kwin','$1','KWin','$2']"
-}
 
 # 3. Switch off the built-in Overview (its gestures, edges and shortcuts go
 #    with it) and give Meta+W to ours (Meta+O keeps working)

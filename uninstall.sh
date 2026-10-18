@@ -14,6 +14,20 @@ if [[ -n "$QDBUS" ]] && "$QDBUS" org.kde.KWin /Effects >/dev/null 2>&1; then
         "$QDBUS" org.kde.KWin /Effects unloadEffect "$EFFECT_ID" >/dev/null || true
     fi
 fi
+# Meta alone: if make-default moved it to our cycle action, hand it back to
+# plasmashell's launcher so it isn't left doing nothing
+GA=(gdbus call --session --dest org.kde.kglobalaccel --object-path /kglobalaccel)
+CYCLE="['kwin','Cycle GNOME Overview','KWin','Cycle GNOME Overview (window picker, app grid, close)']"
+if "${GA[@]}" --method org.kde.KGlobalAccel.shortcutKeys "$CYCLE" 2>/dev/null | grep -q '16777250'; then
+    echo ">> Meta key back to the application launcher"
+    "${GA[@]}" --method org.kde.KGlobalAccel.setForeignShortcutKeys "$CYCLE" "@a(ai) []" >/dev/null || true
+    "${GA[@]}" --method org.kde.KGlobalAccel.setForeignShortcutKeys \
+        "['plasmashell','activate application launcher','plasmashell','Activate Application Launcher']" \
+        "[([16777250, 0, 0, 0],), ([150994992, 0, 0, 0],)]" >/dev/null || true
+fi
+if kreadconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta | grep -q "GNOME Overview"; then
+    kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta --delete || true   # 0.1.0 leftover
+fi
 kwriteconfig6 --file kwinrc --group Plugins --key "${EFFECT_ID}Enabled" --delete || true
 kwriteconfig6 --file kwinrc --group "Effect-$EFFECT_ID" --key ImplDir --delete || true
 
