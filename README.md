@@ -94,10 +94,11 @@ live in the running session (no logout, no plasmashell or KWin restart):
 - `gestures`: `GestureFingers=4`.
 - `panel`: replaces Kickoff with the Show Apps plasmoid at the same position,
   through plasmashell's `evaluateScript`, and makes sure the System Menu sits
-  before the system tray (Kickoff was the Log Out / Power Off entry point).
-  The dash has its own pinned list (seeded once from Kickoff's favourites,
-  see `FavoriteApps`), so nothing has to move. The script prints the panel
-  layout before and after.
+  before the system tray (Kickoff was the Log Out / Power Off entry point). The dash favourites are not migrated
+  because nothing has to move: they belong to Kickoff's KActivities client id
+  (links in kactivitymanagerd, order in `kactivitymanagerd-statsrc`), and
+  `FavoritesClient` keeps pointing at it after Kickoff is gone. The script
+  prints the panel layout and the favourite count before and after.
 
 `restore-defaults.sh` removes the System Menu, copies the backed-up files back, puts Kickoff back where
 the launcher is (same index, through `evaluateScript`), returns `Meta+W` to
@@ -218,12 +219,9 @@ qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Toggle GNOME Overview
   app or a grid icon into the dash to pin it at that position. Right-click
   (dash, grid, folders): New Window, Pin to Dash / Unpin, Quit (closes its
   windows, shown while running).
-- The dash has its own pinned list, like GNOME's: pinning and unpinning in
-  the overview changes only the dash, not the pinned icons of the panel's
-  task manager, and the other way round (the app grid shows every app
-  either way). On first use it is copied once from Kickoff's favourites, in
-  the same order. Like GNOME, favourites are not shown in the app grid
-  (`HideFavoritesInGrid`).
+- Favourites are shared two-way with Kickoff (KActivities favourites, the
+  same list and order Kickoff shows). Like GNOME, favourites are not shown in
+  the app grid (`HideFavoritesInGrid`).
 
 ### Show Apps
 
@@ -305,16 +303,13 @@ Settings…", or in kwinrc `[Effect-kgnomeoverview]`:
   left (GNOME's), `2` top right, `3` bottom left, `4` bottom right. Plasma's
   built-in Overview also uses the top-left corner by default;
   `make-default.sh` frees it (`[Effect-overview] BorderActivate=9`).
-- `FavoriteApps`: the dash's pinned apps, comma-separated desktop ids in
-  dash order, written by the overview when you pin, unpin or reorder.
-  Independent of the panel task manager and of Kickoff.
 - `FavoritesClient` (set by install.sh, e.g.
-  `org.kde.plasma.kickoff.favorites.instance-<N>`, N = Kickoff's applet id)
-  and `FavoritesSeeded`: on first load the dash copies that launcher's
-  KActivities favourites into `FavoriteApps` once, in the same order (with
-  no launcher: Plasma's launcher favourites if any, else Firefox, Dolphin,
-  Konsole, Kate, Discover, System Settings), then sets `FavoritesSeeded`.
-  Delete `FavoriteApps` and `FavoritesSeeded` to seed again.
+  `org.kde.plasma.kickoff.favorites.instance-<N>`, N = Kickoff's applet id): the launcher whose
+  KActivities favourites the dash shares, through Plasma's
+  `KAStatsFavoritesModel`. Set it to an empty value to use `FavoriteApps`.
+- `FavoriteApps` (empty): comma-separated desktop ids for the dash, only used
+  without `FavoritesClient`. If empty, the dash shows the Kickoff favourites
+  read-only.
 - `HideFavoritesInGrid` (true): like GNOME, favourites aren't in the grid or
   folders (they keep their folder and position for when they are unpinned).
 - `DashIconSize` (64): largest dash icon size; GNOME's 48/32/24/22/16 are

@@ -12,12 +12,6 @@ All notable changes to this project are documented here. The format follows
   wallpaper; only used with `BlurBackground`.
 
 ### Changed
-- The dash has its own pinned list (`FavoriteApps`), like GNOME's, instead
-  of sharing Kickoff's KActivities favourites. It is seeded once from
-  Kickoff's favourites in the same order (or Plasma's launcher favourites /
-  the defaults on a fresh install). It is independent of the panel task
-  manager's pinned icons: unpinning in the overview never changed those,
-  and doesn't now.
 - Lighter overview background over the blur (tint 30 % instead of 88 %),
   and `Esc` in the app grid closes the overview directly instead of going
   back to the window picker (differs from GNOME). PR #1 by @HUSTLRX.

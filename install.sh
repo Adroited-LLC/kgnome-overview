@@ -130,9 +130,8 @@ if [[ ! -e "$WAYLAND_EFFECTS/$EFFECT_ID" || -L "$WAYLAND_EFFECTS/$EFFECT_ID" ]];
 fi
 kwriteconfig6 --file kwinrc --group "Effect-$EFFECT_ID" --key ImplDir "$IMPL_DIR"
 
-# Dash favourites: the dash keeps its own list (FavoriteApps); it is seeded
-# once from this launcher's KActivities favourites. Picks the first Kickoff
-# (else Kicker/Kickerdash) applet; set once, user value kept.
+# Dash favourites: share Kickoff's KActivities favourites (two-way). Picks the
+# first Kickoff (else Kicker/Kickerdash) applet; set once, user value kept.
 if [[ -z "$(kreadconfig6 --file kwinrc --group "Effect-$EFFECT_ID" --key FavoritesClient --default __unset__ | sed 's/^__unset__$//')" ]] \
    && ! grep -q '^FavoritesClient=' <(sed -n "/^\[Effect-$EFFECT_ID\]/,/^\[/p" "${XDG_CONFIG_HOME:-$HOME/.config}/kwinrc" 2>/dev/null); then
     APPLETSRC="${XDG_CONFIG_HOME:-$HOME/.config}/plasma-org.kde.plasma.desktop-appletsrc"
@@ -144,7 +143,7 @@ if [[ -z "$(kreadconfig6 --file kwinrc --group "Effect-$EFFECT_ID" --key Favorit
         END { print (k ? k : o) }' "$APPLETSRC" 2>/dev/null || true)
     if [[ -n "$CLIENT" ]]; then
         kwriteconfig6 --file kwinrc --group "Effect-$EFFECT_ID" --key FavoritesClient "$CLIENT"
-        echo "   dash favourites will be seeded from $CLIENT"
+        echo "   dash favourites shared with $CLIENT"
     fi
 fi
 
