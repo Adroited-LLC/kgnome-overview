@@ -1,0 +1,9 @@
+#!/bin/sh
+# kgnome-overview: let KWin (and other Qt apps) find the org.kgnome.overview
+# QML module installed under @KGO_QML_DIR@.
+# Sourced by startplasma at login; takes effect after the next log out/in.
+# Installed by ~/Projects/kgnome-overview/install.sh; removed by uninstall.sh.
+case ":${QML_IMPORT_PATH}:" in
+    *":@KGO_QML_DIR@:"*) ;;
+    *) export QML_IMPORT_PATH="@KGO_QML_DIR@${QML_IMPORT_PATH:+:$QML_IMPORT_PATH}" ;;
+esac

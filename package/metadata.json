@@ -1,0 +1,21 @@
+{
+    "KPackageStructure": "KWin/Effect",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Matt H"
+            }
+        ],
+        "Category": "Window Management",
+        "Description": "A GNOME Shell style overview: search, workspace thumbnails, window picker, paged app grid and dash",
+        "EnabledByDefault": false,
+        "Icon": "view-app-grid-symbolic",
+        "Id": "kgnomeoverview",
+        "License": "GPL-2.0-or-later",
+        "Name": "GNOME-style Overview",
+        "Version": "0.1.0"
+    },
+    "X-KDE-ConfigModule": "kcm_kwin4_genericscripted",
+    "X-KDE-Ordering": 60,
+    "X-Plasma-API": "declarativescript"
+}

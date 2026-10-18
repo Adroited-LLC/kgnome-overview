@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+    <kcfgfile name=""/>
+    <group name="">
+        <entry name="FavoriteApps" type="StringList">
+            <label>Desktop file ids for the dash. Empty: use the Plasma launcher favourites.</label>
+            <default></default>
+        </entry>
+        <entry name="BlurBackground" type="Bool">
+            <default>true</default>
+        </entry>
+        <entry name="IconScale" type="Double">
+            <label>Multiplier for app grid / dash icon sizes (1.0 = GNOME sizes).</label>
+            <default>1.0</default>
+        </entry>
+        <entry name="TopRightCorner" type="Bool">
+            <label>Toggle the overview from the top-right screen corner.</label>
+            <default>false</default>
+        </entry>
+        <entry name="Backend" type="String">
+            <label>auto, module, local or kicker</label>
+            <default>auto</default>
+        </entry>
+    </group>
+</kcfg>
