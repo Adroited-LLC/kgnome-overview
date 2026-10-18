@@ -69,6 +69,11 @@ Rectangle {
         }
         return -1;
     }
+    // Row the menu card sits under. Unlike menuRow it stays set while the
+    // card slides shut, so the card and the toggles below don't jump to
+    // another row mid-animation (that crushed the first toggle row).
+    property int cardRow: -1
+    onMenuRowChanged: if (menuRow >= 0) cardRow = menuRow
     onPowerMenuOpenChanged: if (powerMenuOpen) { openMenu = ""; if (volume.item) volume.item.menuOpen = false; }
     Connections {
         target: volume.item
@@ -190,7 +195,12 @@ Rectangle {
             }
         }
 
-        // System row (status/system.js SystemItem)
+        // System row (status/system.js SystemItem) and, right below it, the
+        // Power Off menu; in their own spacing-free column so the menu's gap
+        // grows with it (Expander)
+        ColumnLayout {
+        Layout.fillWidth: true
+        spacing: 0
         RowLayout {
             Layout.fillWidth: true
             spacing: G.systemRowSpacing * sheet.u
@@ -240,18 +250,12 @@ Rectangle {
 
         // Power submenu (ShutdownItem menu, header "Power Off")
         // slides open inline, pushing the sliders and toggles down
-        Rectangle {
-            Layout.fillWidth: true
+        Expander {
             // .quick-toggle-menu: card, radius 24, margin-top 12, padding 12
-            Layout.preferredHeight: sheet.powerMenuOpen ? menuColumn.implicitHeight + 2 * G.basePadding * 2 * sheet.u : 0
-            Layout.topMargin: visible ? G.menuMargin * sheet.u - column.spacing : -column.spacing
-            visible: Layout.preferredHeight > 0
-            opacity: sheet.powerMenuOpen ? 1 : 0
-            clip: true
-            radius: G.menuRadius * sheet.u
-            color: sheet.pal.card
-            Behavior on Layout.preferredHeight { NumberAnimation { duration: Kirigami.Units.longDuration; easing.type: Easing.OutCubic } }
-            Behavior on opacity { NumberAnimation { duration: Kirigami.Units.longDuration } }
+            open: sheet.powerMenuOpen
+            u: sheet.u
+            pal: sheet.pal
+            fullHeight: menuColumn.implicitHeight + 2 * G.basePadding * 2 * sheet.u
 
             ColumnLayout {
                 id: menuColumn
@@ -324,6 +328,8 @@ Rectangle {
             }
         }
 
+        }
+
         // Sliders (colspan 2)
         Loader {
             id: volume
@@ -355,7 +361,9 @@ Rectangle {
             Layout.fillWidth: true
             visible: sheet.showToggles
             columns: 2
-            rowSpacing: G.gridSpacing * sheet.u
+            // Row spacing comes from each toggle's top margin, so the menu
+            // card's row adds nothing while it is collapsed (see Expander).
+            rowSpacing: 0
             columnSpacing: G.gridSpacing * sheet.u
 
             Repeater {
@@ -370,8 +378,9 @@ Rectangle {
                     required property int index
                     readonly property int cell: { sheet.toggleRev; return sheet.cellOf(index); }
                     readonly property int baseRow: Math.floor(cell / 2)
-                    Layout.row: baseRow + (sheet.menuRow >= 0 && baseRow > sheet.menuRow ? 1 : 0)
+                    Layout.row: baseRow + (sheet.cardRow >= 0 && baseRow > sheet.cardRow ? 1 : 0)
                     Layout.column: cell % 2
+                    Layout.topMargin: baseRow > 0 ? G.gridSpacing * sheet.u : 0
                     Layout.fillWidth: true
                     Layout.preferredWidth: G.toggleWidth * sheet.u
                     active: modelData !== "DarkStyleToggle" || sheet.showDarkStyle
@@ -397,10 +406,12 @@ Rectangle {
             MenuCard {
                 id: toggleMenu
                 readonly property var toggle: sheet.openToggle
-                Layout.row: Math.max(0, sheet.menuRow + 1)
+                Layout.row: sheet.cardRow + 1
                 Layout.column: 0
                 Layout.columnSpan: 2
                 open: sheet.menuRow >= 0
+                // back in the layout's flow once fully shut
+                onShownChanged: if (!shown && sheet.menuRow < 0) sheet.cardRow = -1
                 u: sheet.u
                 pal: sheet.pal
                 // keep the last content while the card slides shut

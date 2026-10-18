@@ -2,30 +2,22 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // GNOME .quick-toggle-menu: a card (radius 24, padding 12) with a header
 // (24px icon in a circle, accent when the toggle is on; title_3 title;
-// caption subtitle) and the toggle's own content below. Slides open.
+// caption subtitle) and the toggle's own content below. Slides open and
+// shut through Expander (shared with the Power Off and Sound Output menus).
 import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import "Gnome.js" as G
 
-Rectangle {
+Expander {
     id: card
-    property bool open: false
     property string iconName
     property string title
     property string subtitle
     property bool active: false
     property Component content
-    property real u: 1
-    property var pal: G.palette(true)
 
-    Layout.fillWidth: true
-    Layout.preferredHeight: open ? body.implicitHeight + 2 * G.basePadding * 2 * u : 0
-    visible: Layout.preferredHeight > 0
-    clip: true
-    radius: G.menuRadius * u
-    color: pal.card
-    Behavior on Layout.preferredHeight { NumberAnimation { duration: Kirigami.Units.longDuration; easing.type: Easing.OutCubic } }
+    fullHeight: body.implicitHeight + 2 * G.basePadding * 2 * u
 
     ColumnLayout {
         id: body
@@ -72,7 +64,7 @@ Rectangle {
         }
         Loader {
             Layout.fillWidth: true
-            active: card.open || card.visible
+            active: card.open || card.shown   // keep the content while it slides shut
             sourceComponent: card.content
         }
     }

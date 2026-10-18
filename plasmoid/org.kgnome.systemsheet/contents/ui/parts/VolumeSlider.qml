@@ -39,15 +39,11 @@ ColumnLayout {
         onIconClicked: if (volume.sink) volume.sink.muted = !volume.sink.muted
         onMenuClicked: volume.menuOpen = !volume.menuOpen
     }
-    Rectangle {   // .quick-toggle-menu card
-        Layout.fillWidth: true
-        Layout.topMargin: volume.menuOpen ? G.menuMargin * volume.u : 0
-        Layout.preferredHeight: volume.menuOpen ? devices.implicitHeight + 2 * G.basePadding * 2 * volume.u : 0
-        visible: Layout.preferredHeight > 0
-        clip: true
-        radius: G.menuRadius * volume.u
-        color: volume.pal.card
-        Behavior on Layout.preferredHeight { NumberAnimation { duration: Kirigami.Units.longDuration; easing.type: Easing.OutCubic } }
+    Expander {   // .quick-toggle-menu card, "Sound Output"
+        open: volume.menuOpen
+        u: volume.u
+        pal: volume.pal
+        fullHeight: devices.implicitHeight + 2 * G.basePadding * 2 * volume.u
         ColumnLayout {
             id: devices
             anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
