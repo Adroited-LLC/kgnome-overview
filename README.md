@@ -68,6 +68,19 @@ qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Toggle GNOME Overview
   overview. The scroll wheel or a two-finger touchpad scroll switches
   workspaces; `Ctrl+Alt+←/→` too.
 - Workspace thumbnails: click one to switch to that desktop.
+- Dynamic workspaces (GNOME's default, `DynamicWorkspaces`): there is always
+  one empty desktop at the end, and empty desktops go away (on window close,
+  window moves and desktop switches, also while the overview is closed; the
+  current desktop stays until you leave it). Drag a window, or an app from the
+  grid, a folder or the dash, onto the empty last thumbnail to put it on a new
+  desktop, or between two thumbnails: they slide apart, a placeholder bar
+  shows, and the drop creates a desktop at that spot. In the app grid the gaps
+  between the workspaces of the strip at the top work the same way.
+- Hover a workspace (thumbnail, side peek in the window picker, strip in the
+  app grid) for an × that closes the desktop. Its windows move to the
+  neighbouring desktop (the previous one; the next one for the first desktop);
+  nothing is closed. The last desktop, and the empty trailing one, have no ×.
+  GNOME has no such button.
 - App grid: drag empty space, scroll with two fingers, use the wheel, the side
   arrows, `←`/`→`, `PgUp`/`PgDn`, `Home`/`End` or a page dot to change the page.
   Dragging an icon moves it: drop it between icons to reorder (the others make
@@ -157,10 +170,14 @@ Settings live in the effect's settings dialog or in kwinrc
 - `AppLayout` / `AppFolders`: written by the overview when you rearrange the
   grid. Delete both keys to go back to alphabetical order and the default
   folders.
+- `DynamicWorkspaces` (true): GNOME dynamic workspaces, see above. Off: the
+  desktop count is left alone and no placeholder appears (thumbnail drops and
+  the × still work).
 - `GestureFingers` (4): fingers for the touchpad swipes, `0` turns them off.
   The swipe-up gesture is registered globally, so apps no longer get it; the
   other directions exist only while the overview is open. (KWin core keeps its
   3-finger desktop swipes in all four directions whatever this is set to.)
+- `DevHooks` / `DevScript` (off): development only, see `dev/drive.sh`.
 - `AppFolders` (empty): app folders as `Name=id1;id2;...` entries (desktop file
   ids, comma-separated entries). If empty, the built-in "Utilities" and "System"
   folders (KDE equivalents of GNOME's defaults, see `impl/Folders.js`) are used.
@@ -221,6 +238,59 @@ plasmashell caches an applet's QML by URL for the whole session, like KWin
 does for effects: after `kpackagetool6 --upgrade` a running plasmashell keeps
 the old `main.qml` until the next login. (That's why the plasmoid's id changed
 from `org.kgnome.overview.launcher` to `org.kgnome.overview.showapps` once.)
+
+## Dynamic workspaces vs. GNOME
+
+Ported from gnome-shell `gnome-50`:
+
+- `js/ui/windowManager.js` `WorkspaceTracker._checkWorkspaces` →
+  `impl/DynamicWorkspaces.qml`: a workspace is in use if a window that isn't
+  on all workspaces is on it, if a dialog/splash left it less than 1 s ago
+  (`LAST_WINDOW_GRACE_TIME`) or if it is kept alive for a launch; append one
+  if the last is in use; remove empty ones from the end except the active one
+  and the first empty one after the last used; at least 2
+  (`MIN_NUM_WORKSPACES`). Checked after window added/removed/moved, desktop
+  switch and desktop list changes.
+- `js/ui/workspaceThumbnail.js` `ThumbnailsBox.handleDragOver`/`acceptDrop`,
+  `_getPlaceholderTarget`, `_withinWorkspace`: placeholder zones
+  (`WORKSPACE_CUT_SIZE` 10 px, 18 px placeholder), `Main.wm.insertWorkspace`
+  then move the window / launch the app, `keepWorkspaceAlive`.
+- `js/ui/workspace.js` `Workspace.acceptDrop`: dropping on a workspace (peek
+  or strip) moves the window / launches the app there.
+
+Differences:
+
+- KWin can insert a desktop at an index, so nothing has to shift windows
+  between workspaces the way `insertWorkspace` does.
+- GNOME keeps a new workspace alive while the app's startup sequence runs;
+  the effect can't see startup notifications, so it keeps it for 15 s.
+- Dropping an app on a workspace switches to it and closes the overview (KWin
+  puts new windows on the current desktop); GNOME launches it there and stays
+  in the overview.
+- GNOME hides the thumbnails with only 2 workspaces (one used + the empty
+  one); here they show whenever there's more than one desktop, so there is
+  always a "top bar" to drop on.
+- Windows hidden from the taskbar, pager and switcher (e.g.
+  xwaylandvideobridge) don't keep a desktop alive.
+- No removals for 10 s after the effect loads (session start, other scripts
+  placing windows), and the tracker pauses itself (journal: "dynamic
+  workspaces paused") if desktops change more than 24 times in 10 s, e.g.
+  when another script enforces a fixed count. Windows on all desktops (how
+  the virtualdesktopsonlyonprimary script parks other screens) never keep a
+  desktop alive, and a desktop is only removed when no window at all is on
+  it, so tilers like Krohnkite don't lose windows.
+- Default desktop names ("Desktop N") are renumbered after a change.
+- The × to close a desktop is not in GNOME.
+
+## Development helpers
+
+- `dev/cycle.sh`: reinstall and reload the effect, show its journal lines.
+- `dev/shot.sh NAME`: open the overview, take a screenshot, close it.
+- `dev/desktops.sh`: list the desktops and the windows on each.
+- `dev/drive.sh 'JS'`: with `DevHooks=true` in `[Effect-kgnomeoverview]`, run
+  JS inside the effect (`effect`, `view`, `workspace` in scope), e.g. to
+  simulate drags: `view.beginWindowDrag(w, p)`, `view.moveWindowDrag(p)`,
+  `view.endWindowDrag(p)`, `view.iconDragBegin(...)`.
 
 ## How KWin finds the C++ module
 
