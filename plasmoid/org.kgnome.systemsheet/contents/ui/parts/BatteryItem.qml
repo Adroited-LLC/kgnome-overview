@@ -16,6 +16,7 @@ Rectangle {
     readonly property string iconName: "battery-" + String(Math.round(battery.percent / 10) * 10).padStart(3, "0")
                                         + (charging ? "-charging" : "") + "-symbolic"
     readonly property int percent: battery.percent
+    property var pal: G.palette(true)
     signal activated()
 
     Battery.BatteryControlModel { id: battery }
@@ -23,7 +24,7 @@ Rectangle {
     implicitHeight: (G.iconSize + 2 * G.iconButtonPadding) * u
     implicitWidth: label.implicitWidth + (G.iconSize + 4 * G.iconButtonPadding) * u
     radius: height / 2
-    color: mouse.pressed ? G.buttonActive : mouse.containsMouse ? G.buttonHover : G.buttonBg
+    color: mouse.pressed ? pal.buttonActive : mouse.containsMouse ? pal.buttonHover : pal.button
     Accessible.role: Accessible.Button
     Accessible.name: i18n("Power settings, battery at %1%", percent)
 
@@ -35,14 +36,15 @@ Rectangle {
             Layout.preferredHeight: G.iconSize * item.u
             source: item.iconName
             fallback: "battery-symbolic"
-            color: G.fg
+            color: item.pal.fg
             isMask: true
         }
         Text {
             id: label
             text: i18nc("battery percentage", "%1%", item.percent)
-            color: G.fg
-            font.pixelSize: 14.67 * item.u * 0.95
+            color: item.pal.fg
+            font.pixelSize: G.titlePt * 4 / 3 * item.u
+            font.weight: Font.Bold
         }
     }
     MouseArea {

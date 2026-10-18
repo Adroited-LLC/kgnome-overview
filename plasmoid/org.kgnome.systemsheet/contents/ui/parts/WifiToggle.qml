@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Wi-Fi on/off (GNOME: status/network.js NMWirelessToggle) through plasma-nm.
 import QtQuick
+import org.kde.kcmutils as KCMUtils
 import org.kde.plasma.networkmanagement as PlasmaNM
 
 QuickToggle {
+    signal openSettings()
+    hasMenu: true
+    menuToolTip: i18n("Wi-Fi settings")
+    onMenuClicked: { openSettings(); KCMUtils.KCMLauncher.openSystemSettings("kcm_networkmanagement"); }
     PlasmaNM.EnabledConnections { id: enabled }
     PlasmaNM.Handler { id: handler }
     PlasmaNM.NetworkStatus { id: status }

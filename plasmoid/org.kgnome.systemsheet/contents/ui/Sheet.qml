@@ -8,6 +8,7 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.coreaddons as KCoreAddons
+import org.kde.ksvg as KSvg
 import "parts"
 import "parts/Gnome.js" as G
 
@@ -20,7 +21,13 @@ Rectangle {
     property bool drawBackground: true
     property bool isOpen: false
     property bool powerMenuOpen: false
+    // "auto" follows the Plasma theme (light or dark GNOME palette)
+    property string styleVariant: "auto"
+    // "gnome": GNOME's default blue #3584e4; "plasma": the KDE accent colour
+    property string accentSource: "gnome"
     readonly property real u: Kirigami.Units.gridUnit / 18
+    readonly property var pal: G.palette(styleVariant === "dark" || (styleVariant !== "light" && G.isDark(Kirigami.Theme.backgroundColor)),
+                                         accentSource === "plasma" ? Kirigami.Theme.highlightColor : G.gnomeAccent)
 
     signal screenshot()
     signal openSettings()
@@ -32,29 +39,71 @@ Rectangle {
     signal switchUser()
     signal closeRequested()
 
-    onIsOpenChanged: if (!isOpen) powerMenuOpen = false
+    onIsOpenChanged: {
+        if (!isOpen) {
+            powerMenuOpen = false;
+            if (volume.item) volume.item.menuOpen = false;
+        } else {
+            bumpTimer.restart();
+        }
+    }
+    // Plasma restores the popup's last size from the applet config before it
+    // reads our Layout hints, and only re-applies Layout.minimumHeight when it
+    // changes; nudge it each time the sheet opens so the popup always fits.
+    property int minBump: 0
+    Timer { id: bumpTimer; interval: 1; onTriggered: { sheet.minBump = 1; Qt.callLater(() => { sheet.minBump = 0; }); } }
 
     readonly property real contentWidth: (2 * G.toggleWidth + G.gridSpacing) * u
     Layout.preferredWidth: contentWidth + 2 * G.sheetPadding * u
     Layout.minimumWidth: Layout.preferredWidth
     Layout.maximumWidth: Layout.preferredWidth
-    Layout.preferredHeight: column.implicitHeight + 2 * G.sheetPadding * u
-    Layout.minimumHeight: Layout.preferredHeight
-    Layout.maximumHeight: Layout.preferredHeight
+    readonly property real wantedHeight: column.implicitHeight + 2 * G.sheetPadding * u
+    readonly property real screenLimit: (Screen.desktopAvailableHeight > 0 ? Screen.desktopAvailableHeight * 0.9 : 100000)
+    Layout.preferredHeight: Math.min(wantedHeight, screenLimit)
+    Layout.minimumHeight: Layout.preferredHeight + minBump
+    Layout.maximumHeight: Layout.preferredHeight + minBump
 
-    color: drawBackground ? G.sheetBg : "transparent"
-    radius: G.sheetRadius * u
+    color: "transparent"
     focus: true
+
+    // Plasma always draws its own popup frame (CompactApplet.qml sets
+    // StandardBackground/SolidBackground), so the GNOME card is stretched
+    // over the frame's padding to cover it, leaving only its outer edge.
+    KSvg.FrameSvgItem {
+        id: frameRef
+        visible: false
+        imagePath: "dialogs/background"
+    }
+    Rectangle {
+        id: card
+        visible: sheet.drawBackground
+        anchors.fill: parent
+        anchors.leftMargin: -frameRef.margins.left
+        anchors.rightMargin: -frameRef.margins.right
+        anchors.topMargin: -frameRef.margins.top
+        anchors.bottomMargin: -frameRef.margins.bottom
+        color: sheet.pal.sheetBg
+        radius: G.sheetRadius * sheet.u
+        border.width: 1
+        border.color: sheet.pal.sheetBorder
+    }
     Keys.onEscapePressed: powerMenuOpen ? (powerMenuOpen = false) : closeRequested()
 
     KCoreAddons.KUser { id: kuser }
 
+    Flickable {
+        id: flick
+        anchors.fill: parent
+        anchors.margins: G.sheetPadding * sheet.u
+        contentWidth: width
+        contentHeight: column.implicitHeight
+        interactive: contentHeight > height
+        boundsBehavior: Flickable.StopAtBounds
+        clip: interactive
+
     ColumnLayout {
         id: column
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.margins: G.sheetPadding * sheet.u
+        width: flick.width
         spacing: G.gridSpacing * sheet.u
 
         // Optional (GNOME 50 doesn't show the user in this menu)
@@ -65,7 +114,7 @@ Rectangle {
                 Layout.preferredWidth: 40 * sheet.u
                 Layout.preferredHeight: 40 * sheet.u
                 radius: width / 2
-                color: G.buttonBg
+                color: sheet.pal.button
                 clip: true
                 Image {
                     id: face
@@ -88,16 +137,16 @@ Rectangle {
                     visible: face.status !== Image.Ready
                     source: "user-symbolic"
                     fallback: "user-identity"
-                    color: G.fg
+                    color: sheet.pal.fg
                     isMask: true
                 }
             }
             Text {
                 Layout.fillWidth: true
                 text: kuser.fullName || kuser.loginName
-                color: G.fg
+                color: sheet.pal.fg
                 font.weight: Font.Bold
-                font.pixelSize: 14.67 * sheet.u * 1.05
+                font.pixelSize: G.titlePt * 4 / 3 * sheet.u * 1.1
                 elide: Text.ElideRight
             }
         }
@@ -105,12 +154,12 @@ Rectangle {
         // System row (status/system.js SystemItem)
         RowLayout {
             Layout.fillWidth: true
-            spacing: G.basePadding * 1.5 * sheet.u
+            spacing: G.systemRowSpacing * sheet.u
             Loader {
                 id: battery
                 source: "parts/BatteryItem.qml"
                 visible: status === Loader.Ready && item.available
-                onLoaded: item.u = Qt.binding(() => sheet.u)
+                onLoaded: { item.u = Qt.binding(() => sheet.u); item.pal = Qt.binding(() => sheet.pal); }
                 Connections {
                     target: battery.item
                     function onActivated() { sheet.closeRequested(); }
@@ -119,12 +168,14 @@ Rectangle {
             Item { Layout.fillWidth: true; visible: battery.visible }   // laptop spacer
             IconButton {
                 u: sheet.u
+                pal: sheet.pal
                 iconName: "camera-photo-symbolic"
                 toolTip: i18n("Take Screenshot")
                 onClicked: sheet.screenshot()
             }
             IconButton {
                 u: sheet.u
+                pal: sheet.pal
                 iconName: "configure-symbolic"
                 toolTip: i18n("Settings")
                 onClicked: sheet.openSettings()
@@ -132,6 +183,7 @@ Rectangle {
             Item { Layout.fillWidth: true; visible: !battery.visible }  // desktop spacer
             IconButton {
                 u: sheet.u
+                pal: sheet.pal
                 visible: sheet.sessions.canLock
                 iconName: "system-lock-screen-symbolic"
                 toolTip: i18n("Lock Screen")
@@ -139,6 +191,7 @@ Rectangle {
             }
             IconButton {
                 u: sheet.u
+                pal: sheet.pal
                 iconName: "system-shutdown-symbolic"
                 toolTip: i18n("Power Off / Log Out")
                 checked: sheet.powerMenuOpen
@@ -150,13 +203,14 @@ Rectangle {
         // slides open inline, pushing the sliders and toggles down
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: sheet.powerMenuOpen ? menuColumn.implicitHeight + 2 * G.basePadding * sheet.u : 0
-            Layout.topMargin: visible ? 0 : -column.spacing
+            // .quick-toggle-menu: card, radius 24, margin-top 12, padding 12
+            Layout.preferredHeight: sheet.powerMenuOpen ? menuColumn.implicitHeight + 2 * G.basePadding * 2 * sheet.u : 0
+            Layout.topMargin: visible ? G.menuMargin * sheet.u - column.spacing : -column.spacing
             visible: Layout.preferredHeight > 0
             opacity: sheet.powerMenuOpen ? 1 : 0
             clip: true
             radius: G.menuRadius * sheet.u
-            color: G.menuBg
+            color: sheet.pal.card
             Behavior on Layout.preferredHeight { NumberAnimation { duration: Kirigami.Units.longDuration; easing.type: Easing.OutCubic } }
             Behavior on opacity { NumberAnimation { duration: Kirigami.Units.longDuration } }
 
@@ -165,46 +219,46 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.margins: G.basePadding * sheet.u
+                anchors.margins: G.basePadding * 2 * sheet.u
                 spacing: 0
 
                 RowLayout {   // .quick-toggle-menu .header
-                    Layout.margins: G.basePadding * sheet.u
-                    spacing: G.gridSpacing * sheet.u
-                    Rectangle {
-                        Layout.preferredWidth: 32 * sheet.u
-                        Layout.preferredHeight: 32 * sheet.u
+                    Layout.bottomMargin: G.basePadding * 2 * sheet.u
+                    spacing: G.basePadding * 2 * sheet.u
+                    Rectangle {   // .header .icon: 24px icon, padding 9, fg 20%
+                        Layout.preferredWidth: (G.iconSize * 1.5 + 2 * 1.5 * G.basePadding) * sheet.u
+                        Layout.preferredHeight: Layout.preferredWidth
                         radius: width / 2
-                        color: Kirigami.Theme.highlightColor
+                        color: sheet.pal.headerIcon
                         Kirigami.Icon {
                             anchors.centerIn: parent
-                            width: G.iconSize * sheet.u; height: width
+                            width: G.iconSize * 1.5 * sheet.u; height: width
                             source: "system-shutdown-symbolic"
-                            color: G.fg
+                            color: sheet.pal.fg
                             isMask: true
                         }
                     }
                     Text {
                         text: i18n("Power Off")
-                        color: G.fg
+                        color: sheet.pal.fg
                         font.weight: Font.Bold
-                        font.pixelSize: 14.67 * sheet.u * 1.1
+                        font.pixelSize: 15 * 4 / 3 * sheet.u   // %title_3
                     }
                 }
                 MenuItemRow {
-                    Layout.fillWidth: true; u: sheet.u
+                    Layout.fillWidth: true; u: sheet.u; pal: sheet.pal
                     visible: sheet.sessions.canSuspend
                     text: i18n("Suspend")
                     onTriggered: sheet.suspend()
                 }
                 MenuItemRow {
-                    Layout.fillWidth: true; u: sheet.u
+                    Layout.fillWidth: true; u: sheet.u; pal: sheet.pal
                     visible: sheet.sessions.canReboot
                     text: i18n("Restart…")
                     onTriggered: sheet.reboot()
                 }
                 MenuItemRow {
-                    Layout.fillWidth: true; u: sheet.u
+                    Layout.fillWidth: true; u: sheet.u; pal: sheet.pal
                     visible: sheet.sessions.canShutdown
                     text: i18n("Power Off…")
                     onTriggered: sheet.powerOff()
@@ -213,17 +267,17 @@ Rectangle {
                     Layout.fillWidth: true
                     Layout.margins: G.basePadding * sheet.u
                     implicitHeight: 1
-                    color: G.separator
+                    color: sheet.pal.menuSeparator
                     visible: sheet.sessions.canLogout || sheet.sessions.canSwitchUser
                 }
                 MenuItemRow {
-                    Layout.fillWidth: true; u: sheet.u
+                    Layout.fillWidth: true; u: sheet.u; pal: sheet.pal
                     visible: sheet.sessions.canLogout
                     text: i18n("Log Out…")
                     onTriggered: sheet.logOut()
                 }
                 MenuItemRow {
-                    Layout.fillWidth: true; u: sheet.u
+                    Layout.fillWidth: true; u: sheet.u; pal: sheet.pal
                     visible: sheet.sessions.canSwitchUser
                     text: i18n("Switch User…")
                     onTriggered: sheet.switchUser()
@@ -237,12 +291,14 @@ Rectangle {
             Layout.fillWidth: true
             source: "parts/VolumeSlider.qml"
             visible: status === Loader.Ready && item.available
+            onLoaded: item.pal = Qt.binding(() => sheet.pal)
         }
         Loader {
             id: brightness
             Layout.fillWidth: true
             source: "parts/BrightnessSliders.qml"
             visible: status === Loader.Ready && item.available
+            onLoaded: item.pal = Qt.binding(() => sheet.pal)
         }
 
         // Toggles (1 column each, N_QUICK_SETTINGS_COLUMNS = 2), GNOME order
@@ -262,6 +318,7 @@ Rectangle {
                     active: modelData !== "DarkStyleToggle" || sheet.showDarkStyle
                     source: "parts/" + modelData + ".qml"
                     visible: status === Loader.Ready && item.available
+                    onLoaded: item.pal = Qt.binding(() => sheet.pal)
                     Connections {
                         target: toggleLoader.item
                         ignoreUnknownSignals: true
@@ -270,5 +327,6 @@ Rectangle {
                 }
             }
         }
+    }
     }
 }

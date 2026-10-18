@@ -75,6 +75,8 @@ PlasmoidItem {
         showUserHeader: Plasmoid.configuration.showUserHeader
         showToggles: Plasmoid.configuration.showToggles
         showDarkStyle: Plasmoid.configuration.showDarkStyle
+        styleVariant: Plasmoid.configuration.styleVariant
+        accentSource: Plasmoid.configuration.accentSource
         drawBackground: !root.inTray
         isOpen: root.expanded
         onScreenshot: root.closeThen(() => root.run("spectacle -r"), 300)

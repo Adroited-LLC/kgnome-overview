@@ -10,6 +10,10 @@ KCM.SimpleKCM {
     property alias cfg_showToggles: toggles.checked
     property alias cfg_showDarkStyle: darkStyle.checked
     property int cfg_expandRequest
+    property string cfg_styleVariant
+    property string cfg_accentSource
+    property string cfg_styleVariantDefault
+    property string cfg_accentSourceDefault
     // set by plasmashell's config dialog for every key; declared so it doesn't warn
     property string cfg_compactStyleDefault
     property bool cfg_showUserHeaderDefault
@@ -33,6 +37,30 @@ KCM.SimpleKCM {
             text: i18n("Inside the system tray only the single icon is shown.")
             font: Kirigami.Theme.smallFont
             opacity: 0.7
+        }
+        Item { Kirigami.FormData.isSection: true }
+        QQC2.ComboBox {
+            Kirigami.FormData.label: i18n("Style:")
+            textRole: "text"
+            valueRole: "value"
+            model: [
+                { text: i18n("Follow the Plasma theme"), value: "auto" },
+                { text: i18n("GNOME dark"), value: "dark" },
+                { text: i18n("GNOME light"), value: "light" }
+            ]
+            Component.onCompleted: currentIndex = Math.max(0, indexOfValue(cfg_styleVariant))
+            onActivated: cfg_styleVariant = currentValue
+        }
+        QQC2.ComboBox {
+            Kirigami.FormData.label: i18n("Accent colour:")
+            textRole: "text"
+            valueRole: "value"
+            model: [
+                { text: i18n("GNOME blue"), value: "gnome" },
+                { text: i18n("Plasma accent colour"), value: "plasma" }
+            ]
+            Component.onCompleted: currentIndex = Math.max(0, indexOfValue(cfg_accentSource))
+            onActivated: cfg_accentSource = currentValue
         }
         Item { Kirigami.FormData.isSection: true }
         QQC2.CheckBox {

@@ -2,9 +2,14 @@
 // Bluetooth on/off (GNOME: status/bluetooth.js) through BluezQt, the same
 // calls Plasma's Bluetooth applet makes.
 import QtQuick
+import org.kde.kcmutils as KCMUtils
 import org.kde.bluezqt as BluezQt
 
 QuickToggle {
+    signal openSettings()
+    hasMenu: true
+    menuToolTip: i18n("Bluetooth settings")
+    onMenuClicked: { openSettings(); KCMUtils.KCMLauncher.openSystemSettings("kcm_bluetooth"); }
     readonly property var manager: BluezQt.Manager
     available: manager.bluetoothBlocked || manager.adapters.length > 0
     checked: manager.bluetoothOperational

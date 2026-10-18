@@ -5,10 +5,12 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.private.brightnesscontrolplugin as BC
+import "Gnome.js" as G
 
 ColumnLayout {
     id: column
     property real u: Kirigami.Units.gridUnit / 18
+    property var pal: G.palette(true)
     readonly property bool available: control.isBrightnessAvailable && repeater.count > 0
     spacing: 0
 
@@ -26,6 +28,7 @@ ColumnLayout {
             required property int maxBrightness
             Layout.fillWidth: true
             u: column.u
+            pal: column.pal
             iconName: "display-brightness-symbolic"
             toolTip: repeater.count > 1 ? label : i18n("Brightness")
             value: maxBrightness > 0 ? brightness / maxBrightness : 0

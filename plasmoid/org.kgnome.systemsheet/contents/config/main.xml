@@ -6,6 +6,10 @@
   <group name="General">
     <!-- "single": one power (or battery) icon; "icons": GNOME's status icons (network, volume, battery/power) -->
     <entry name="compactStyle" type="String"><default>single</default></entry>
+    <!-- "auto": GNOME's light or dark palette following the Plasma theme; "dark"; "light" -->
+    <entry name="styleVariant" type="String"><default>auto</default></entry>
+    <!-- "gnome": GNOME's default accent #3584e4; "plasma": the KDE accent colour -->
+    <entry name="accentSource" type="String"><default>gnome</default></entry>
     <!-- GNOME 50 has no user header in the menu; optional -->
     <entry name="showUserHeader" type="Bool"><default>false</default></entry>
     <entry name="showToggles" type="Bool"><default>true</default></entry>
