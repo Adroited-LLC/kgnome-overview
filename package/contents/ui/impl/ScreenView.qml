@@ -359,8 +359,6 @@ FocusScope {
                 effect.folderOpen = "";
             } else if (searching) {
                 effect.searchText = "";
-            } else if (effect.targetState === effect.stateAppGrid) {
-                effect.setState(effect.stateWindowPicker);
             } else {
                 effect.hide();
             }
@@ -449,10 +447,10 @@ FocusScope {
             saturation: -0.2
         }
         Rectangle {
-            // solid GNOME background, or a GNOME-coloured tint over the blur
+            // Light tint lets the blurred wallpaper show around the workspaces.
             anchors.fill: parent
             color: L.SYSTEM_BASE_COLOR
-            opacity: effect.blurBackground ? 0.88 : 1
+            opacity: effect.blurBackground ? 0.30 : 1
         }
     }
 
