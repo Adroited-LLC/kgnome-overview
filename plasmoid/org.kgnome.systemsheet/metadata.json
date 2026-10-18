@@ -1,0 +1,16 @@
+{
+    "KPlugin": {
+        "Authors": [{ "Name": "Matt Hoffer", "Email": "matt@adroited.com" }],
+        "Category": "System Information",
+        "Description": "GNOME Shell-style system menu (Quick Settings): volume and brightness, quick toggles, screenshot, settings, lock, and Suspend / Restart / Power Off / Log Out / Switch User",
+        "Icon": "system-shutdown-symbolic",
+        "Id": "org.kgnome.systemsheet",
+        "License": "GPL-2.0-or-later",
+        "Name": "GNOME-style System Menu",
+        "Version": "1.0"
+    },
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-NotificationArea": "true",
+    "X-Plasma-NotificationAreaCategory": "SystemServices"
+}
