@@ -27,11 +27,12 @@ reconfigure() {
     "$QDBUS" org.kde.KWin /KWin reconfigure >/dev/null
 }
 
-# 1. Meta alone toggles our overview (instead of opening Kickoff)
+# 1. Meta alone opens our overview (instead of Kickoff): "Cycle GNOME
+#    Overview" = window picker, app grid, close (MetaCycle=toggle: GNOME)
 step_meta() {
-    echo ">> Meta key -> Toggle GNOME Overview"
+    echo ">> Meta key -> Cycle GNOME Overview"
     kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta \
-        "org.kde.kglobalaccel,/component/kwin,org.kde.kglobalaccel.Component,invokeShortcut,Toggle GNOME Overview"
+        "org.kde.kglobalaccel,/component/kwin,org.kde.kglobalaccel.Component,invokeShortcut,Cycle GNOME Overview"
     reconfigure
     echo "   $(kreadconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta)"
 }

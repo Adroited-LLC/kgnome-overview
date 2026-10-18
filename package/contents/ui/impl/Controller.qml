@@ -55,6 +55,8 @@ QtObject {
         sharedFavorites = c.status === Component.Ready ? c.createObject(effect, {client: favoritesClient}) : null;
         console.info("kgnome-overview: favourites", sharedFavorites ? "shared with " + favoritesClient : "from FavoriteApps (" + c.errorString().trim() + ")");
     }
+    // Meta alone: 0/"cycle" = picker -> app grid -> hidden, 1/"toggle" = GNOME
+    readonly property bool metaCycle: !(cfg && (cfg.MetaCycle === 1 || cfg.MetaCycle === "toggle"))
     readonly property int hotCorner: (cfg && cfg.HotCorner !== undefined) ? cfg.HotCorner : 1
     // GNOME dynamic workspaces (DynamicWorkspaces.qml)
     readonly property bool dynamicWorkspaces: cfg ? cfg.DynamicWorkspaces !== false : true
@@ -287,6 +289,20 @@ QtObject {
             setState(stateWindowPicker);
         }
     }
+    // Meta alone (the "Cycle GNOME Overview" action): hidden -> window picker
+    // -> app grid -> hidden, the picker-to-grid step uses the usual state
+    // blend. GNOME's behaviour (a second press closes) with MetaCycle=toggle.
+    function cycleOverview() {
+        if (!metaCycle) {
+            toggleOverview();
+        } else if (!active) {
+            setState(stateWindowPicker);
+        } else if (targetState === stateWindowPicker) {
+            setState(stateAppGrid);
+        } else {
+            hide();
+        }
+    }
     function toggleAppGrid() {
         if (active && targetState === stateAppGrid) {
             hide();
@@ -464,6 +480,13 @@ QtObject {
             text: "Toggle GNOME Overview"
             sequence: "Meta+O"
             onActivated: effect.toggleOverview()
+        },
+        // What Meta alone invokes (dev/make-default.sh points kwinrc
+        // ModifierOnlyShortcuts Meta here); no key of its own
+        KWinComponents.ShortcutHandler {
+            name: "Cycle GNOME Overview"
+            text: "Cycle GNOME Overview (window picker, app grid, close)"
+            onActivated: effect.cycleOverview()
         },
         KWinComponents.ShortcutHandler {
             name: "Toggle GNOME App Grid"
