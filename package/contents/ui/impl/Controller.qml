@@ -283,6 +283,27 @@ QtObject {
     function hide() {
         setState(stateHidden);
     }
+    // Every trigger (shortcuts, Meta, hot corner, the Show Apps button, which
+    // goes through invokeShortcut) passes here first. Two triggers within
+    // triggerDebounceMs are one key press reaching us twice (e.g. Meta bound
+    // both to our cycle and to plasmashell's launcher, whose Show Apps
+    // button then asks for the app grid): only the first counts. The next
+    // step is always computed from targetState, never the animated value.
+    readonly property int triggerDebounceMs: 150
+    property double lastTriggerTime: 0
+    function trigger(name, fn) {
+        const now = Date.now();
+        const dt = now - lastTriggerTime;
+        if (dt >= 0 && dt < triggerDebounceMs) {
+            console.info("kgnome-overview: ignored", name, "(" + dt + " ms after the previous trigger)");
+            return;
+        }
+        lastTriggerTime = now;
+        const from = targetState;
+        fn();
+        console.info("kgnome-overview: trigger", name + ":", from, "->", targetState);
+    }
+
     function toggleOverview() {
         if (active) {
             hide();
@@ -480,20 +501,21 @@ QtObject {
             name: "Toggle GNOME Overview"
             text: "Toggle GNOME Overview"
             sequence: "Meta+O"
-            onActivated: effect.toggleOverview()
+            onActivated: effect.trigger("toggle", effect.toggleOverview)
         },
-        // What Meta alone invokes (scripts/make-default.sh points kwinrc
-        // ModifierOnlyShortcuts Meta here); no key of its own
+        // What Meta alone invokes: scripts/make-default.sh gives this action
+        // the kglobalaccel key "Meta" (and takes Meta off plasmashell's
+        // "Activate Application Launcher"); no key of its own by default
         KWinComponents.ShortcutHandler {
             name: "Cycle GNOME Overview"
             text: "Cycle GNOME Overview (window picker, app grid, close)"
-            onActivated: effect.cycleOverview()
+            onActivated: effect.trigger("cycle", effect.cycleOverview)
         },
         KWinComponents.ShortcutHandler {
             name: "Toggle GNOME App Grid"
             text: "Toggle GNOME App Grid"
             sequence: "Meta+Shift+O"
-            onActivated: effect.toggleAppGrid()
+            onActivated: effect.trigger("app grid", effect.toggleAppGrid)
         },
         // Vertical swipes: up = hidden -> picker -> app grid, down = back.
         Instantiator {
@@ -557,7 +579,7 @@ QtObject {
             edge: [KWinComponents.ScreenEdgeHandler.NoEdge, KWinComponents.ScreenEdgeHandler.TopLeftEdge,
                    KWinComponents.ScreenEdgeHandler.TopRightEdge, KWinComponents.ScreenEdgeHandler.BottomLeftEdge,
                    KWinComponents.ScreenEdgeHandler.BottomRightEdge][Math.max(0, Math.min(4, effect.hotCorner))]
-            onActivated: effect.toggleOverview()
+            onActivated: effect.trigger("hot corner", effect.toggleOverview)
         }
     ]
 
