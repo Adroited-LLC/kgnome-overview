@@ -178,7 +178,8 @@ qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Toggle GNOME Overview
   switch it off (`make-default.sh` does) to avoid two effects reacting.
 - Window picker: click a window to activate it. Middle-click or the × button
   closes it. Drag a window onto a thumbnail, a side peek or a workspace in the
-  strip to move it to that desktop. Click a side workspace to switch to it.
+  strip to move it to that desktop; like GNOME, the dragged window shrinks
+  as it gets close to the thumbnails. Click a side workspace to switch to it.
   Click empty space (or the current workspace's wallpaper) to close the
   overview. The scroll wheel or a two-finger touchpad scroll switches
   workspaces; `Ctrl+Alt+←/→` too.

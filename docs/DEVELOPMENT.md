@@ -157,6 +157,10 @@ from a script.
 - `dev/cycle.sh`: reinstall and reload the effect, show its journal lines.
 - `dev/shot.sh NAME`: open the overview, take a screenshot, close it.
 - `dev/desktops.sh`: list the desktops and the windows on each.
+- `dev/sheet-anim.sh [--shots]`: load the System Menu's `Sheet.qml` in a
+  plain `qml` window, open and close every inline menu and report each
+  animation frame by frame (height reversals, squashed toggles, largest
+  step). Works without restarting plasmashell.
 - `dev/drive.sh 'JS'`: with `DevHooks=true` in `[Effect-kgnomeoverview]`, run
   JS inside the effect (`effect`, `view`, `workspace` in scope), e.g. to
   simulate drags: `view.beginWindowDrag(w, p)`, `view.moveWindowDrag(p)`,
