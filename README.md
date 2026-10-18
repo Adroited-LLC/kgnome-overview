@@ -1,22 +1,129 @@
 # kgnome-overview
 
-A GNOME Shell style overview for KDE Plasma 6 (KWin, Wayland): search entry at
-the top, workspace thumbnails, a window picker, a paged app grid and a dash with
-your favourites, all driven by one animated state value like GNOME's
-`OverviewControls`.
+GNOME Shell's overview, app grid and Quick Settings menu for KDE Plasma 6
+(KWin, Wayland).
 
-Installed with `install.sh` it runs side by side with Plasma's own Overview
-effect and leaves Meta+W, the Meta key on its own and the top-left screen
-corner alone. `scripts/make-default.sh` makes it *the* overview, like on GNOME
-(Meta, top-left corner, Meta+W, 4-finger swipes, a Show Apps button in place
-of Kickoff); `scripts/restore-defaults.sh` undoes that. See
-[Making it the default](#making-it-the-default).
+- **Overview**: a KWin effect ("GNOME-style Overview") with the search entry
+  at the top, workspace thumbnails, the window picker with side workspaces,
+  a paged app grid with folders and a dash with your favourites, animated
+  like GNOME's `OverviewControls`. Dynamic workspaces, drag and drop of
+  windows and apps onto workspaces, touchpad gestures, hot corner.
+- **Show Apps** panel button (`org.kgnome.overview.showapps`): opens the app
+  grid (or the window picker), also on `Alt+F1`.
+- **System Menu** panel/tray widget (`org.kgnome.systemsheet`, "GNOME-style
+  System Menu"): GNOME 50's Quick Settings sheet with screenshot, settings,
+  lock and an inline power menu (Suspend, Restart, Power Off, Log Out,
+  Switch User), volume/microphone/brightness sliders and quick toggles for
+  Wired, Wi-Fi, VPN, Bluetooth, Power Mode, Night Light, Dark Style, Do Not
+  Disturb, keyboard backlight and Airplane Mode.
 
-License: GPL-2.0-or-later. The layout logic and constants are ported from GNOME
-Shell (gnome-50: `overviewControls.js`, `iconGrid.js`, `workspaceThumbnail.js`,
-`dash.js`). The window layout uses KWin's `ExpoLayout`.
+Everything installs into your home directory; no root needed except for the
+build dependencies. By default it runs side by side with Plasma's own
+Overview and Application Launcher; one command (or a prompt in the
+installer) makes it the default, another undoes that.
 
-## Triggers
+![System Menu](docs/screenshots/system-menu.png)
+
+## Requirements
+
+Plasma 6 on Wayland (developed and tested on Plasma 6.7; older 6.x releases
+may lack some System Menu controls, which are then hidden). To build: CMake, a C++20
+compiler, extra-cmake-modules, Qt 6 (Base, Declarative) and KF6 Service,
+Config and CoreAddons development files. `kwin-devel` is not needed.
+
+| Distribution | Command |
+|---|---|
+| Fedora | `sudo dnf install cmake gcc-c++ extra-cmake-modules qt6-qtbase-devel qt6-qtdeclarative-devel kf6-kservice-devel kf6-kconfig-devel kf6-kcoreaddons-devel` |
+| Arch / Manjaro / EndeavourOS | `sudo pacman -S --needed base-devel cmake extra-cmake-modules qt6-base qt6-declarative kservice kconfig kcoreaddons` |
+| openSUSE Tumbleweed | `sudo zypper install cmake gcc-c++ kf6-extra-cmake-modules qt6-base-devel qt6-declarative-devel kf6-kservice-devel kf6-kconfig-devel kf6-kcoreaddons-devel` |
+| Kubuntu / Debian (Plasma 6: Kubuntu 25.04+, Debian 13+) | `sudo apt install cmake g++ extra-cmake-modules qt6-base-dev qt6-declarative-dev libkf6service-dev libkf6config-dev libkf6coreaddons-dev` |
+
+`install.sh` checks for the tools it needs and prints the matching command
+if something is missing. At runtime the System Menu uses what Plasma
+already ships (plasma-workspace, plasma-pa, plasma-nm, bluedevil,
+powerdevil, spectacle); controls whose service is missing are hidden.
+
+## Install
+
+```sh
+git clone https://github.com/Adroited-LLC/kgnome-overview.git
+cd kgnome-overview
+./install.sh                    # build, install to ~/.local, load the effect; asks
+                                # whether to make it the default
+./install.sh --make-default     # same, and make it the default without asking
+./install.sh --no-make-default  # never ask
+./install.sh --no-load          # install only, leave the running session alone
+```
+
+The effect works right away in the running session. Log out and back in
+once after the first install anyway: the environment script that lets KWin
+import the C++ module the normal way is read at login. Running
+`./install.sh` again updates everything; KWin reloads the effect at once,
+while plasmashell only shows an updated Show Apps or System Menu widget
+after a re-login or `systemctl --user restart plasma-plasmashell`, and
+changes to the C++ module (`src/`) need a re-login.
+
+### Making it the default
+
+`./install.sh --make-default` (or `scripts/make-default.sh`) makes it *the*
+overview, like on GNOME: Meta on its own, the top-left corner, `Meta+W`,
+4-finger swipes, and a Show Apps button plus the System Menu on the panel
+in place of the Application Launcher. All live, no re-login.
+
+```sh
+scripts/make-default.sh                 # all steps
+scripts/make-default.sh meta corner     # only some: meta corner builtin gestures panel
+scripts/restore-defaults.sh             # undo (oldest make-default backup = the state before)
+scripts/restore-defaults.sh <timestamp> # restore backup/<timestamp>
+```
+
+Every run of `make-default.sh` first copies `kwinrc`, `kglobalshortcutsrc`,
+`plasma-org.kde.plasma.desktop-appletsrc`, `plasmashellrc` and
+`kactivitymanagerdrc` to `backup/<timestamp>/` (git-ignored). The steps, all
+live in the running session (no logout, no plasmashell or KWin restart):
+
+- `meta`: Meta on its own opens the overview (kwinrc
+  `[ModifierOnlyShortcuts] Meta=…,invokeShortcut,Cycle GNOME Overview`).
+- `corner`: frees the built-in Overview's screen edges and sets `HotCorner=1`.
+- `builtin`: `[Plugins] overviewEnabled=false`, unloads Plasma's Overview, and
+  moves `Meta+W` from its `Overview` shortcut to `Toggle GNOME Overview`
+  (which keeps `Meta+O`).
+- `gestures`: `GestureFingers=4`.
+- `panel`: replaces Kickoff with the Show Apps plasmoid at the same position,
+  through plasmashell's `evaluateScript`, and makes sure the System Menu sits
+  before the system tray (Kickoff was the Log Out / Power Off entry point). The dash favourites are not migrated
+  because nothing has to move: they belong to Kickoff's KActivities client id
+  (links in kactivitymanagerd, order in `kactivitymanagerd-statsrc`), and
+  `FavoritesClient` keeps pointing at it after Kickoff is gone. The script
+  prints the panel layout and the favourite count before and after.
+
+`restore-defaults.sh` removes the System Menu, copies the backed-up files back, puts Kickoff back where
+the launcher is (same index, through `evaluateScript`), returns `Meta+W` to
+Plasma's Overview and reloads it. `kactivitymanagerd-statsrc` (favourite
+order) is only restored with `RESTORE_STATSRC=1`. The re-added Kickoff is a new
+applet instance; the original one (and its favourites client) comes back from
+the restored appletsrc at the next login.
+
+### Uninstall
+
+```sh
+scripts/restore-defaults.sh   # if you made it the default
+./uninstall.sh                # unload and remove everything install.sh added
+```
+
+`install.sh` only writes inside your home directory:
+
+| What | Where |
+|------|-------|
+| QML module `org.kgnome.overview` | `~/.local/lib64/qml/org/kgnome/overview/` (or `lib/`) |
+| KWin effect package `kgnomeoverview` | `~/.local/share/kwin/effects/kgnomeoverview/` (via `kpackagetool6 --type KWin/Effect`) |
+| Symlink to the package | `~/.local/share/kwin-wayland/effects/kgnomeoverview` |
+| Env script | `~/.config/plasma-workspace/env/kgnome-overview.sh` (adds the module dir to `QML_IMPORT_PATH` at login) |
+| kwinrc | `[Plugins] kgnomeoverviewEnabled=true`, `[Effect-kgnomeoverview] ImplDir=impl-<timestamp>`, `FavoritesClient` |
+| Show Apps plasmoid `org.kgnome.overview.showapps` | `~/.local/share/plasma/plasmoids/`; put on the panel by `make-default` |
+| System Menu plasmoid `org.kgnome.systemsheet` | `~/.local/share/plasma/plasmoids/`; added before the system tray of every panel that has the Show Apps button, if there is no System Menu anywhere yet (appletsrc backed up to `backup/<timestamp>-install/` first) |
+
+## Using it
 
 | Action                    | Default        | KWin shortcut name       |
 |---------------------------|----------------|--------------------------|
@@ -24,9 +131,9 @@ Shell (gnome-50: `overviewControls.js`, `iconGrid.js`, `workspaceThumbnail.js`,
 | Toggle app grid           | `Meta+Shift+O` | `Toggle GNOME App Grid`  |
 | Hot corner                | top left       | `HotCorner` setting      |
 | Touchpad swipe up / down  | 4 fingers      | `GestureFingers` setting |
-| Meta on its own           | after `make-default.sh` | `Cycle GNOME Overview` (kwinrc `[ModifierOnlyShortcuts]`) |
-| `Meta+W`                  | after `make-default.sh` | second key of `Toggle GNOME Overview` |
-| Panel Show Apps button / `Alt+F1` | after `make-default.sh` | plasmoid `org.kgnome.overview.showapps` |
+| Meta on its own           | after make-default | `Cycle GNOME Overview` (kwinrc `[ModifierOnlyShortcuts]`) |
+| `Meta+W`                  | after make-default | second key of `Toggle GNOME Overview` |
+| Panel Show Apps button / `Alt+F1` | after make-default | plasmoid `org.kgnome.overview.showapps` |
 
 Meta on its own cycles: the first press opens the window picker, the second
 goes on to the app grid, the third closes the overview (`MetaCycle=cycle`,
@@ -34,11 +141,9 @@ default). GNOME closes on the second press; set "Meta key" to "Toggle" in the
 effect settings (`MetaCycle=toggle`) for that. `Meta+O`, `Meta+W`, the hot
 corner and the panel button always toggle.
 
-You can change the shortcuts in System Settings > Keyboard > Shortcuts > KWin.
+Change the shortcuts in System Settings > Keyboard > Shortcuts > KWin.
 GNOME uses `Super+A` for the app grid, but in Plasma `Meta+A` is already
-taken by Plasma's "Walk through activities".
-
-From a script:
+taken by "Walk through activities". From a script:
 
 ```sh
 qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Toggle GNOME Overview"
@@ -114,36 +219,73 @@ qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Toggle GNOME Overview
   same list and order Kickoff shows). Like GNOME, favourites are not shown in
   the app grid (`HideFavoritesInGrid`).
 
-## Build / install / uninstall
+### Show Apps
 
-You need `cmake`, `extra-cmake-modules`, `qt6-qtdeclarative-devel`,
-`kf6-kservice-devel`, `kf6-kconfig-devel` and `kf6-kcoreaddons-devel`.
-You don't need `kwin-devel`.
+`plasmoid/org.kgnome.overview.showapps`: a panel icon (default
+`view-app-grid-symbolic`, configurable) that opens the app grid, or the window
+picker (setting "Opens"), through `invokeShortcut` on KWin's global shortcut
+component. It provides `org.kde.plasma.launchermenu`, so Plasma's
+"Activate Application Launcher" shortcut (`Alt+F1`) opens the grid too.
+Add it by hand from "Add Widgets…" (Application Launchers) if you don't use
+`make-default.sh`. Its settings page and right-click menu have
+"Overview Settings…", which opens the effect's settings dialog directly:
 
 ```sh
-./install.sh            # build, install to ~/.local, enable and (re)load the effect
-./install.sh --no-load  # same, but leave the running KWin alone
-./uninstall.sh          # unload and remove everything install.sh added
+kcmshell6 kwin/effects/configs/kcm_kwin4_genericscripted --args 'kgnomeoverview KWin/Effect'
 ```
 
-`install.sh` only writes inside your home directory:
+### System Menu
 
-| What | Where |
-|------|-------|
-| QML module `org.kgnome.overview` | `~/.local/lib64/qml/org/kgnome/overview/` |
-| KWin effect package `kgnomeoverview` | `~/.local/share/kwin/effects/kgnomeoverview/` (via `kpackagetool6 --type KWin/Effect`) |
-| Symlink to the package | `~/.local/share/kwin-wayland/effects/kgnomeoverview` (see below) |
-| Env script | `~/.config/plasma-workspace/env/kgnome-overview.sh` (adds the module dir to `QML_IMPORT_PATH` at login) |
-| kwinrc | `[Plugins] kgnomeoverviewEnabled=true`, `[Effect-kgnomeoverview] ImplDir=impl-<timestamp>`, `FavoritesClient` |
-| Panel plasmoid `org.kgnome.overview.showapps` | `~/.local/share/plasma/plasmoids/` (via `kpackagetool6 --type Plasma/Applet`); not added to a panel |
-| System menu plasmoid `org.kgnome.systemsheet` | `~/.local/share/plasma/plasmoids/`; added before the system tray of every panel that has the Show Apps button, if there is no System Menu anywhere yet (appletsrc backed up to `backup/<timestamp>-install/` first) |
+`install.sh` puts it on the Show Apps panel, before the tray. Elsewhere:
+"Add Widgets…" → "GNOME-style System Menu" (any panel or the desktop), or
+inside the system tray: tray settings → Entries → "GNOME-style System Menu"
+→ Always shown (it is a System Services tray entry).
+`scripts/system-menu.sh ensure|remove` adds/removes it on the Show Apps panel.
 
-You can also toggle the effect in System Settings > Window Management >
-Desktop Effects ("GNOME-style Overview").
+Layout, top to bottom, as in gnome-shell 50 (`js/ui/panel.js`
+`QuickSettings._setupIndicators`, `js/ui/status/*.js`):
 
-### Settings
+- System row (`status/system.js`): battery percentage (only with a battery;
+  opens the power settings), Take Screenshot (`spectacle -r`), Settings
+  (System Settings), Lock, and the power button whose "Power Off" menu slides
+  open inline: Suspend, Restart…, Power Off…, Log Out…, Switch User…. These
+  go through Plasma's SessionManagement; Restart, Power Off and Log Out always
+  show KDE's own confirmation screen. Items the system can't do are hidden.
+- Output volume (plasma-pa, the icon mutes; with more than one output an
+  arrow opens "Sound Output" to pick the device), microphone volume only
+  while an app is recording, and screen brightness per display PowerDevil can
+  control (laptop backlight or DDC/CI monitors).
+- Two-column toggles; ones whose hardware or service is missing are hidden:
+  Wired, Wi-Fi (network list, password asked inline), VPN (list), Bluetooth
+  (paired devices), Power Mode (power-profiles-daemon / tuned-ppd via
+  PowerDevil), Night Light (pauses/resumes; opens its settings if Night
+  Light is off), Dark Style (switches between the default light and dark
+  Global Themes, i.e. `plasma-apply-lookandfeel`, which also resets that
+  theme's colours and icons), Do Not Disturb, Keyboard backlight, Airplane
+  Mode.
 
-Settings live in the effect's settings dialog or in kwinrc
+Settings (right-click → Configure): panel icon (single power/battery icon or
+GNOME's network/volume/battery icons; the tray always uses one icon), style
+(follow the Plasma theme, GNOME dark, GNOME light), accent (GNOME blue
+`#3584e4` or the Plasma accent), sheet corner radius (0 = square like other
+Plasma popups, GNOME uses 36), user name and picture header (not in GNOME
+50), quick toggles on/off, Dark Style toggle on/off.
+
+Differences from GNOME: GNOME 50 opens this from the top bar's status area
+and shows no user name or avatar in it (the name only appears in the Log Out
+dialog); Plasma always draws its popup frame, so the card fills it; the
+Wi-Fi/Bluetooth lists don't offer hidden networks or pairing (those are in
+System Settings, linked from each menu); Log Out is always offered (GNOME
+hides it on single-user machines).
+
+## Settings
+
+### Overview
+
+In System Settings > Window Management > Desktop Effects > "GNOME-style
+Overview" (configure button), from the Show Apps button's "Overview
+Settings…", or in kwinrc `[Effect-kgnomeoverview]`:
+
 `[Effect-kgnomeoverview]`:
 
 - `BlurBackground` (true): blur the wallpaper behind the overview.
@@ -198,249 +340,6 @@ kwriteconfig6 --file kwinrc --group Effect-kgnomeoverview --key IconScale 1.5
 qdbus org.kde.KWin /KWin reconfigure
 ```
 
-## Making it the default
-
-```sh
-scripts/make-default.sh                 # all steps
-scripts/make-default.sh meta corner     # only some: meta corner builtin gestures panel
-scripts/restore-defaults.sh             # undo (oldest backup = the state before any change)
-scripts/restore-defaults.sh backup/<timestamp>
-```
-
-Every run of `make-default.sh` first copies `kwinrc`, `kglobalshortcutsrc`,
-`plasma-org.kde.plasma.desktop-appletsrc`, `plasmashellrc` and
-`kactivitymanagerdrc` to `backup/<timestamp>/` (git-ignored). The steps, all
-live in the running session (no logout, no plasmashell or KWin restart):
-
-- `meta`: Meta on its own opens the overview (kwinrc
-  `[ModifierOnlyShortcuts] Meta=…,invokeShortcut,Cycle GNOME Overview`).
-- `corner`: frees the built-in Overview's screen edges and sets `HotCorner=1`.
-- `builtin`: `[Plugins] overviewEnabled=false`, unloads Plasma's Overview, and
-  moves `Meta+W` from its `Overview` shortcut to `Toggle GNOME Overview`
-  (which keeps `Meta+O`).
-- `gestures`: `GestureFingers=4`.
-- `panel`: replaces Kickoff with the Show Apps plasmoid at the same position,
-  through plasmashell's `evaluateScript`, and makes sure the System Menu sits
-  before the system tray (Kickoff was the Log Out / Power Off entry point). The dash favourites are not migrated
-  because nothing has to move: they belong to Kickoff's KActivities client id
-  (links in kactivitymanagerd, order in `kactivitymanagerd-statsrc`), and
-  `FavoritesClient` keeps pointing at it after Kickoff is gone. The script
-  prints the panel layout and the favourite count before and after.
-
-`restore-defaults.sh` removes the System Menu, copies the backed-up files back, puts Kickoff back where
-the launcher is (same index, through `evaluateScript`), returns `Meta+W` to
-Plasma's Overview and reloads it. `kactivitymanagerd-statsrc` (favourite
-order) is only restored with `RESTORE_STATSRC=1`. The re-added Kickoff is a new
-applet instance; the original one (and its favourites client) comes back from
-the restored appletsrc at the next login.
-
-### The Show Apps plasmoid
-
-`plasmoid/org.kgnome.overview.showapps`: a panel icon (default
-`view-app-grid-symbolic`, configurable) that opens the app grid, or the window
-picker (setting "Opens"), through `invokeShortcut` on KWin's global shortcut
-component. It provides `org.kde.plasma.launchermenu`, so Plasma's
-"Activate Application Launcher" shortcut (`Alt+F1`) opens the grid too.
-Add it by hand from "Add Widgets…" (Application Launchers) if you don't use
-`make-default.sh`. Its settings page and right-click menu have
-"Overview Settings…", which opens the effect's settings dialog directly:
-
-```sh
-kcmshell6 kwin/effects/configs/kcm_kwin4_genericscripted --args 'kgnomeoverview KWin/Effect'
-```
-
-In System Settings the effect is "GNOME-style Overview" under Window
-Management > Desktop Effects, section "Window Management".
-
-plasmashell caches an applet's QML by URL for the whole session, like KWin
-does for effects: after `kpackagetool6 --upgrade` a running plasmashell keeps
-the old `main.qml` until the next login. (That's why the plasmoid's id changed
-from `org.kgnome.overview.launcher` to `org.kgnome.overview.showapps` once.)
-
-### The System Menu plasmoid
-
-`plasmoid/org.kgnome.systemsheet` ("GNOME-style System Menu"): GNOME 50's
-Quick Settings sheet, because without Kickoff there is no Log Out or Power
-Off button. `install.sh` puts it on the Show Apps panel, before the tray.
-Elsewhere: "Add Widgets…" → "GNOME-style System Menu" (any panel or the
-desktop), or inside the system tray: tray settings → Entries → "GNOME-style
-System Menu" → Always shown (it is a System Services tray entry).
-`scripts/system-menu.sh ensure|remove` adds/removes it on the Show Apps panel.
-
-Layout, top to bottom, as in gnome-shell 50 (`js/ui/panel.js`
-`QuickSettings._setupIndicators`, `js/ui/status/*.js`):
-
-- System row (`status/system.js`): battery percentage (only with a battery;
-  opens the power settings), Take Screenshot (`spectacle -r`), Settings
-  (System Settings), Lock, and the power button whose "Power Off" menu slides
-  open inline: Suspend, Restart…, Power Off…, Log Out…, Switch User…. These
-  go through Plasma's SessionManagement; Restart, Power Off and Log Out always
-  show KDE's own confirmation screen. Items the system can't do are hidden.
-- Output volume (plasma-pa, the icon mutes; with more than one output an
-  arrow opens "Sound Output" to pick the device), microphone volume only
-  while an app is recording, and screen brightness per display PowerDevil can
-  control (laptop backlight or DDC/CI monitors).
-- Two-column toggles; ones whose hardware or service is missing are hidden:
-  Wired, Wi-Fi (network list, password asked inline), VPN (list), Bluetooth
-  (paired devices), Power Mode (power-profiles-daemon / tuned-ppd via
-  PowerDevil), Night Light (pauses/resumes; opens its settings if Night
-  Light is off), Dark Style (switches between the default light and dark
-  Global Themes, i.e. `plasma-apply-lookandfeel`, which also resets that
-  theme's colours and icons), Do Not Disturb, Keyboard backlight, Airplane
-  Mode.
-
-Settings (right-click → Configure): panel icon (single power/battery icon or
-GNOME's network/volume/battery icons; the tray always uses one icon), style
-(follow the Plasma theme, GNOME dark, GNOME light), accent (GNOME blue
-`#3584e4` or the Plasma accent), sheet corner radius (0 = square like other
-Plasma popups, GNOME uses 36), user name and picture header (not in GNOME
-50), quick toggles on/off, Dark Style toggle on/off.
-
-Differences from GNOME: GNOME 50 opens this from the top bar's status area
-and shows no user name or avatar in it (the name only appears in the Log Out
-dialog); Plasma always draws its popup frame, so the card fills it; the
-Wi-Fi/Bluetooth lists don't offer hidden networks or pairing (those are in
-System Settings, linked from each menu); Log Out is always offered (GNOME
-hides it on single-user machines).
-
-The applet id is new to plasmashell's QML cache the first time; after
-upgrading an already-loaded System Menu, plasmashell shows the new version
-after the next login (or `systemctl --user restart plasma-plasmashell`).
-`dev/sheet-test.sh` shows the installed version in a separate
-`plasmawindowed` process and takes a screenshot.
-
-## Dynamic workspaces vs. GNOME
-
-Ported from gnome-shell `gnome-50`:
-
-- `js/ui/windowManager.js` `WorkspaceTracker._checkWorkspaces` →
-  `impl/DynamicWorkspaces.qml`: a workspace is in use if a window that isn't
-  on all workspaces is on it, if a dialog/splash left it less than 1 s ago
-  (`LAST_WINDOW_GRACE_TIME`) or if it is kept alive for a launch; append one
-  if the last is in use; remove empty ones from the end except the active one
-  and the first empty one after the last used; at least 2
-  (`MIN_NUM_WORKSPACES`). Checked after window added/removed/moved, desktop
-  switch and desktop list changes.
-- `js/ui/workspaceThumbnail.js` `ThumbnailsBox.handleDragOver`/`acceptDrop`,
-  `_getPlaceholderTarget`, `_withinWorkspace`: placeholder zones
-  (`WORKSPACE_CUT_SIZE` 10 px, 18 px placeholder), `Main.wm.insertWorkspace`
-  then move the window / launch the app, `keepWorkspaceAlive`.
-- `js/ui/workspace.js` `Workspace.acceptDrop`: dropping on a workspace (peek
-  or strip) moves the window / launches the app there.
-
-Differences:
-
-- KWin can insert a desktop at an index, so nothing has to shift windows
-  between workspaces the way `insertWorkspace` does.
-- GNOME keeps a new workspace alive while the app's startup sequence runs;
-  the effect can't see startup notifications, so it keeps it for 15 s.
-- Dropping an app on a workspace switches to it and closes the overview (KWin
-  puts new windows on the current desktop); GNOME launches it there and stays
-  in the overview.
-- GNOME hides the thumbnails with only 2 workspaces (one used + the empty
-  one); here they show whenever there's more than one desktop, so there is
-  always a "top bar" to drop on.
-- Windows hidden from the taskbar, pager and switcher (e.g.
-  xwaylandvideobridge) don't keep a desktop alive.
-- No removals for 10 s after the effect loads (session start, other scripts
-  placing windows), and the tracker pauses itself (journal: "dynamic
-  workspaces paused") if another party keeps undoing its changes (more than
-  24 automatic changes and at least 12 outside desktop changes in 10 s, e.g.
-  a script that enforces a fixed count); it resumes after a minute without
-  outside changes. Settings changes, reloads and your own drops/closes can't
-  trip it, and the check re-runs on load, when the overview opens, after a
-  settings change and every 30 s. Windows on all desktops (how
-  the virtualdesktopsonlyonprimary script parks other screens) never keep a
-  desktop alive, and a desktop is only removed when no window at all is on
-  it, so tilers like Krohnkite don't lose windows.
-- Default desktop names ("Desktop N") are renumbered after a change.
-- The × to close a desktop and the "+" on the trailing empty thumbnail are
-  not in GNOME.
-
-## Development helpers
-
-- `dev/cycle.sh`: reinstall and reload the effect, show its journal lines.
-- `dev/shot.sh NAME`: open the overview, take a screenshot, close it.
-- `dev/desktops.sh`: list the desktops and the windows on each.
-- `dev/drive.sh 'JS'`: with `DevHooks=true` in `[Effect-kgnomeoverview]`, run
-  JS inside the effect (`effect`, `view`, `workspace` in scope), e.g. to
-  simulate drags: `view.beginWindowDrag(w, p)`, `view.moveWindowDrag(p)`,
-  `view.endWindowDrag(p)`, `view.iconDragBegin(...)`.
-
-## How KWin finds the C++ module
-
-KWin reads its environment, including `QML_IMPORT_PATH`, once at session start,
-and `~/.local/lib64/qml` is not on Qt's default import path. The effect picks
-the first app backend that loads:
-
-1. `module`: `import org.kgnome.overview`. This works once the env script has
-   been sourced, so after the next log out/in.
-2. `local`: an absolute directory import of the installed module
-   (`import "file:///home/…/org/kgnome/overview"`). `install.sh` generates this
-   file. It works in a running session without a relogin.
-3. `kicker`: a pure-QML fallback built on Plasma's private Kicker models
-   (`RootModel`/`SimpleFavoritesModel`). Icons load synchronously here, and the
-   dash uses the configured or default favourites.
-
-The C++ module provides the following:
-
-- `AppsModel`: visible applications from `KApplicationTrader`, sorted
-  alphabetically, refreshed when KSycoca changes. It can also list favourites
-  (`favoritesOnly`) or filter results (`filterString`).
-- `Launcher.launch(id)`: runs `kstart --application <id>` (falling back to
-  `gtk-launch`, then `gio launch`) through `QProcess::startDetached`, so apps
-  are not children of KWin.
-- Icon path resolution: theme lookup in C++, so QML can decode icons with
-  `Image { asynchronous: true }`.
-
-### Why `impl-<timestamp>` and the kwin-wayland symlink?
-
-KWin compiles all declarative effects in one QML engine that lives as long as
-the session and caches compiled QML by URL. A reinstalled effect would keep
-running the old QML until you log out. To avoid that:
-
-- `contents/ui/main.qml` is a small bootstrap that should never need to change.
-- All real code lives in `contents/ui/impl-<timestamp>/`. The bootstrap reads the
-  directory name from kwinrc (`ImplDir`), so every install gets fresh URLs.
-- KWin looks in `kwin-wayland/effects/` before `kwin/effects/`. The symlink
-  gave the bootstrap a URL that wasn't cached yet when the effect was first
-  installed into the running session.
-
-The C++ plugin cannot be unloaded from a running KWin. Changes to `src/` only
-take effect after a log out/in.
-
-## Layout (ported from GNOME 50)
-
-Sources: gnome-shell `gnome-50` branch, `js/ui/overviewControls.js`,
-`js/ui/workspacesView.js`, `js/ui/workspace.js`, `js/ui/iconGrid.js`,
-`js/ui/appDisplay.js`, `js/ui/pageIndicators.js` and
-`data/theme/gnome-shell-sass/widgets/*.scss`.
-
-- `spacing = 2% of height`. The search entry (24em wide, 12px from the top)
-  is at the top; the dash pill sits at the bottom, at most 16% of the height.
-- Workspace thumbnails sit under the search entry, at most 5% of the height,
-  only with more than one workspace.
-- `WINDOW_PICKER`: `FitMode.SINGLE`. The current workspace is centred in the
-  box between thumbnails and dash, the neighbours sit beside it with
-  `clamp(available − 0.4·width, 24, 80)` px spacing and peek in from the sides.
-  Inactive workspaces are scaled to 94%. Windows are spread out (KWin's
-  ExpoLayout, at most 95% of their real size).
-- `APP_GRID`: `FitMode.ALL`. All workspaces are shown side by side as small live
-  previews in a strip (15% of the height) under the search entry, windows at
-  their natural positions. The thumbnails fade out, scale to 50% and slide
-  down. The app grid fills the space below.
-- Each region has a box per state, blended by `stateValue`
-  (0 hidden, 1 window picker, 2 app grid), animated over 250 ms (OutQuad);
-  workspace switches animate over 250 ms (OutCubic).
-- App grid: the best mode among 8×3 / 6×4 / 4×6 / 3×8 (rows × columns) is
-  picked by aspect ratio; icons are the largest of 96/64/48/32/24/16 px that
-  fit; spacing 12 px growing to at most 36 px; page padding 24 px top/bottom
-  and 18 px plus 10% of the width per side (navigation arrows); 10 px
-  horizontal page dots under the grid; pages switch in 300 ms.
-- Colours: background `#222226` (optionally tinted over the blurred
-  wallpaper), dash/folder dialog `#38383b`, search entry `#2e2e33`, accent from
-  the Plasma colour scheme.
-
 ## Known limits
 
 - Keyboard focus/selection of individual windows and app icons is not
@@ -449,10 +348,41 @@ Sources: gnome-shell `gnome-50` branch, `js/ui/overviewControls.js`,
   field (so KRunner model resets can't swallow keys); it looks and behaves
   like GNOME's.
 - The app menu has no per-window entries, "App Details" or GPU launch item.
-- The physical Meta key, the hot corner and the touchpad gestures were set up
-  and verified through config/DBus but not by real input on this machine.
+- The Meta cycle, hot corner and touchpad gestures are tested through
+  config/DBus; real-input testing has been on one machine only.
 - Touchpad swipes move one step per gesture (hidden → picker or picker → grid),
   not continuously through both like GNOME.
 - Panels are covered by the overview (they fade out, as in KWin's Overview).
-- Multi-monitor: one overview per screen with a shared search text. Only tested
-  on a single 4K monitor.
+- Multi-monitor: one overview per screen with a shared search text. Tested
+  on a single 4K monitor only.
+- System Menu: Wi-Fi/Bluetooth lists don't offer hidden networks,
+  enterprise Wi-Fi or pairing (each menu links to System Settings); no Screen
+  Recording toggle, per-app volume or background-apps list; the Wired and VPN
+  menus only list profiles. Dark Style switches the whole Global Theme
+  (default Breeze light/dark), which resets that theme's colours and icons.
+- The Wired toggle disconnects the active wired connection, as in GNOME. If
+  your network runs over a bridge or bond, that cuts the connection.
+- Plasma always draws its own popup frame; the sheet fills it.
+- An updated panel plasmoid is only picked up by plasmashell after a re-login
+  (or `systemctl --user restart plasma-plasmashell`); KWin keeps an already
+  loaded C++ module until the next login.
+
+## License and credits
+
+kgnome-overview is free software under the GNU General Public License,
+version 2 or (at your option) any later version (`GPL-2.0-or-later`, see
+[LICENSES/GPL-2.0-or-later.txt](LICENSES/GPL-2.0-or-later.txt)).
+
+Copyright © 2026 Matt Hoffer <matt@adroited.com>.
+
+The overview layout, constants and behaviour, the dynamic workspaces and the
+System Menu design are ported from or modelled on
+[GNOME Shell](https://gitlab.gnome.org/GNOME/gnome-shell) (gnome-50,
+GPL-2.0-or-later). The window layout uses
+[KWin](https://invent.kde.org/plasma/kwin)'s `ExpoLayout`, and the effect,
+plasmoids and System Menu are built on KWin, libplasma, Plasma Workspace,
+plasma-pa, plasma-nm, BluezQt and PowerDevil. Not affiliated with or
+endorsed by the GNOME Foundation or KDE e.V.
+
+Developer notes (how it is ported, the QML caching workarounds, test
+helpers): [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
