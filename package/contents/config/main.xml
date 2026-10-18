@@ -10,7 +10,7 @@
             <default></default>
         </entry>
         <entry name="FavoritesClient" type="String">
-            <label>KActivities favourites client shared with the launcher, e.g. org.kde.plasma.kickoff.favorites.instance-118 (set by install.sh). Empty: use FavoriteApps.</label>
+            <label>KActivities favourites client shared with the launcher, e.g. org.kde.plasma.kickoff.favorites.instance-N, N = the Kickoff applet id (set by install.sh). Empty: use FavoriteApps.</label>
             <default></default>
         </entry>
         <entry name="HideFavoritesInGrid" type="Bool">

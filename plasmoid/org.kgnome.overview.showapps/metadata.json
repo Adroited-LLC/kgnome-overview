@@ -1,6 +1,6 @@
 {
     "KPlugin": {
-        "Authors": [{ "Name": "Matt H" }],
+        "Authors": [{ "Name": "Matt Hoffer", "Email": "matt@adroited.com" }],
         "Category": "Application Launchers",
         "Description": "Opens the GNOME-style app grid of the kgnome-overview KWin effect",
         "Icon": "view-app-grid-symbolic",

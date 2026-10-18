@@ -423,7 +423,7 @@ QtObject {
     // --- Dev hook (off by default): kwinrc DevHooks=true, then every new
     // DevScript value is run as JS with (effect, view, workspace) after
     // `reconfigureEffect kgnomeoverview`. Lets dev scripts drive drags and
-    // clicks, since input can't be injected on this machine (dev/drive.sh).
+    // clicks, since real input can't be injected from a script (dev/drive.sh).
     readonly property bool devHooks: cfg ? cfg.DevHooks === true : false
     readonly property string devScript: cfg && cfg.DevScript ? String(cfg.DevScript) : ""
     property bool devReady: false       // don't re-run the stored script on load

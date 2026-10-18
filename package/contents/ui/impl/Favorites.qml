@@ -54,7 +54,7 @@ QtObject {
     function refresh() {
         const next = rowIds().filter(x => x.endsWith(".desktop"));
         if (next.join(",") !== ids.join(",")) {
-            console.info("kgnome-overview: favourites (" + client + "):", next.length, next.join(","));
+            console.info("kgnome-overview: favourites (" + client + "):", next.length);
         }
         ids = next;
         ready = true;

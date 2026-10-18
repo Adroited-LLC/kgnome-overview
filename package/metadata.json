@@ -2,9 +2,7 @@
     "KPackageStructure": "KWin/Effect",
     "KPlugin": {
         "Authors": [
-            {
-                "Name": "Matt H"
-            }
+            { "Name": "Matt Hoffer", "Email": "matt@adroited.com" }
         ],
         "Category": "Window Management",
         "Description": "A GNOME Shell style overview: search, workspace thumbnails, window picker, paged app grid and dash",

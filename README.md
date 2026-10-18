@@ -35,7 +35,7 @@ effect settings (`MetaCycle=toggle`) for that. `Meta+O`, `Meta+W`, the hot
 corner and the panel button always toggle.
 
 You can change the shortcuts in System Settings > Keyboard > Shortcuts > KWin.
-GNOME uses `Super+A` for the app grid, but on this machine `Meta+A` is already
+GNOME uses `Super+A` for the app grid, but in Plasma `Meta+A` is already
 taken by Plasma's "Walk through activities".
 
 From a script:
@@ -154,7 +154,7 @@ Settings live in the effect's settings dialog or in kwinrc
   built-in Overview also uses the top-left corner by default;
   `make-default.sh` frees it (`[Effect-overview] BorderActivate=9`).
 - `FavoritesClient` (set by install.sh, e.g.
-  `org.kde.plasma.kickoff.favorites.instance-118`): the launcher whose
+  `org.kde.plasma.kickoff.favorites.instance-<N>`, N = Kickoff's applet id): the launcher whose
   KActivities favourites the dash shares, through Plasma's
   `KAStatsFavoritesModel`. Set it to an empty value to use `FavoriteApps`.
 - `FavoriteApps` (empty): comma-separated desktop ids for the dash, only used

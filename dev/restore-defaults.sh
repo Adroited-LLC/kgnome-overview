@@ -4,7 +4,7 @@
 # backup/<timestamp>/ (the oldest, i.e. the state before the first make-default run, by default) and make KWin and plasmashell pick
 # them up without logging out.
 #   dev/restore-defaults.sh                 restore the oldest backup
-#   dev/restore-defaults.sh 20261018-002519 restore that backup
+#   dev/restore-defaults.sh <timestamp>     restore backup/<timestamp>
 set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")/.."
 QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus)
