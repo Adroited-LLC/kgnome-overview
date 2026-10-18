@@ -7,11 +7,15 @@
     <kcfgfile name=""/>
     <group name="">
         <entry name="FavoriteApps" type="StringList">
-            <label>Dash favourites (desktop file ids), used only when FavoritesClient is empty or the Plasma favourites model cannot be loaded.</label>
+            <label>The dash's own pinned apps (desktop file ids, in order). Independent of the panel task manager and of any launcher. Seeded once (see FavoritesSeeded).</label>
             <default></default>
         </entry>
+        <entry name="FavoritesSeeded" type="Bool">
+            <label>Set after FavoriteApps was seeded once from FavoritesClient (or the defaults). Delete it together with FavoriteApps to seed again.</label>
+            <default>false</default>
+        </entry>
         <entry name="FavoritesClient" type="String">
-            <label>KActivities favourites client shared with the launcher, e.g. org.kde.plasma.kickoff.favorites.instance-N, N = the Kickoff applet id (set by install.sh). Empty: use FavoriteApps.</label>
+            <label>One-time seed source for FavoriteApps: the KActivities favourites client of the launcher the dash replaces, e.g. org.kde.plasma.kickoff.favorites.instance-N (set by install.sh).</label>
             <default></default>
         </entry>
         <entry name="HideFavoritesInGrid" type="Bool">

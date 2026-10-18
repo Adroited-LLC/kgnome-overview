@@ -35,31 +35,89 @@ QtObject {
     readonly property real backgroundTint: (cfg && cfg.BackgroundTint !== undefined && cfg.BackgroundTint !== null
                                             && !isNaN(Number(cfg.BackgroundTint)))
                                            ? Math.max(0, Math.min(100, Number(cfg.BackgroundTint))) / 100 : 0.30
-    readonly property var configFavoriteIds: (cfg && cfg.FavoriteApps) ? cfg.FavoriteApps.filter(s => s.length > 0) : []
-    // dash favourites: shared with Kickoff (Favorites.qml) or FavoriteApps
+    // The dash has its own pinned list, FavoriteApps in kwinrc, like GNOME's
+    // AppFavorites; it is independent of the panel task manager's pins and of
+    // any launcher. "none.desktop" stands for an empty list (an empty value
+    // would make the app model fall back to its default favourites).
+    readonly property var configFavoriteIds: (cfg && cfg.FavoriteApps)
+                                             ? cfg.FavoriteApps.filter(s => s.length > 0 && s !== "none.desktop") : []
+    readonly property bool favoritesSeeded: cfg ? cfg.FavoritesSeeded === true : false
+    // One-time seed source: the KActivities favourites of the launcher the
+    // dash replaced (install.sh writes Kickoff's client id here).
     readonly property string favoritesClient: (cfg && cfg.FavoritesClient) ? String(cfg.FavoritesClient) : ""
-    property QtObject sharedFavorites: null
-    readonly property bool favoritesShared: sharedFavorites !== null && sharedFavorites.ready
-    readonly property var favoriteIds: favoritesShared ? sharedFavorites.ids : configFavoriteIds
+    readonly property var favoriteIds: configFavoriteIds
     readonly property bool hideFavoritesInGrid: cfg ? cfg.HideFavoritesInGrid !== false : true
     readonly property int dashIconSize: (cfg && cfg.DashIconSize > 0) ? cfg.DashIconSize : 64
     readonly property int searchFocusReturnMs: (cfg && cfg.SearchFocusReturnMs !== undefined) ? cfg.SearchFocusReturnMs : 250
-    onFavoritesClientChanged: createSharedFavorites()
-    function createSharedFavorites() {
-        if (sharedFavorites && sharedFavorites.client === favoritesClient) {
+
+    // Seed FavoriteApps once: from the launcher's favourites (same order) if
+    // there are any, else from the app model's favourites (Plasma launcher
+    // favourites it can read, else the built-in defaults). Never again after
+    // FavoritesSeeded=true, so unpinning everything stays empty.
+    property QtObject seedSource: null
+    function seedFavorites() {
+        if (favoritesSeeded || !cfg || seedSource) {
             return;
         }
-        if (sharedFavorites) {
-            sharedFavorites.destroy();
-            sharedFavorites = null;
-        }
-        if (favoritesClient.length === 0) {
+        if (configFavoriteIds.length > 0 || (cfg.FavoriteApps && cfg.FavoriteApps.length > 0)) {
+            finishSeed(null, "existing FavoriteApps");
             return;
         }
-        const c = Qt.createComponent(Qt.resolvedUrl("Favorites.qml"));
-        sharedFavorites = c.status === Component.Ready ? c.createObject(effect, {client: favoritesClient}) : null;
-        console.info("kgnome-overview: favourites", sharedFavorites ? "shared with " + favoritesClient : "from FavoriteApps (" + c.errorString().trim() + ")");
+        if (favoritesClient.length > 0 && !seedSource) {
+            const c = Qt.createComponent(Qt.resolvedUrl("Favorites.qml"));
+            seedSource = c.status === Component.Ready ? c.createObject(effect, {client: favoritesClient}) : null;
+            if (seedSource) {
+                seedTimer.start();   // the KActivities model fills asynchronously
+                return;
+            }
+            console.info("kgnome-overview: favourites seed source unavailable:", c.errorString().trim());
+        }
+        seedFromBackend();
     }
+    function seedFromBackend() {
+        if (!backend) {
+            return;   // retried from createBackend()
+        }
+        const ids = [];
+        for (let i = 0; i < backend.count("favorites"); ++i) {
+            const a = backend.appAt("favorites", i);
+            if (a && a.storageId) {
+                ids.push(normalizedFavorite(a.storageId));
+            }
+        }
+        finishSeed(ids, "app model defaults");
+    }
+    function finishSeed(ids, from) {
+        if (ids !== null) {
+            writeConfig("FavoriteApps", ids.length > 0 ? ids : ["none.desktop"]);
+        }
+        writeConfig("FavoritesSeeded", true);
+        console.info("kgnome-overview: dash favourites seeded from", from + ":", ids === null ? configFavoriteIds.length : ids.length);
+        if (seedSource) {
+            seedSource.destroy();
+            seedSource = null;
+        }
+    }
+    function seedTick() {
+        if (!seedSource) {
+            return;
+        }
+        if (seedSource.ids.length > 0) {
+            finishSeed(seedSource.ids.slice(), favoritesClient);
+        } else if (++seedTries >= 10) {   // ~5 s: the launcher had no favourites
+            seedSource.destroy();
+            seedSource = null;
+            seedFromBackend();
+        } else {
+            seedTimer.start();
+        }
+    }
+    property int seedTries: 0
+    readonly property Timer seedTimer: Timer {
+        interval: 500
+        onTriggered: effect.seedTick()
+    }
+
     // Meta alone: 0/"cycle" = picker -> app grid -> hidden, 1/"toggle" = GNOME
     readonly property bool metaCycle: !(cfg && (cfg.MetaCycle === 1 || cfg.MetaCycle === "toggle"))
     readonly property int hotCorner: (cfg && cfg.HotCorner !== undefined) ? cfg.HotCorner : 1
@@ -103,8 +161,7 @@ QtObject {
     }
 
     // Favourites (GNOME AppFavorites: addFavoriteAtPos, moveFavoriteToPos,
-    // removeFavorite). Without a shared launcher list the current dash is
-    // copied into FavoriteApps on the first change.
+    // removeFavorite) in FavoriteApps.
     function normalizedFavorite(storageId) {
         return storageId.endsWith(".desktop") ? storageId : storageId + ".desktop";
     }
@@ -113,7 +170,7 @@ QtObject {
     }
     function currentFavoriteList() {
         let ids = configFavoriteIds.slice();
-        if (ids.length === 0 && backend) {
+        if (ids.length === 0 && !favoritesSeeded && backend) {
             for (let i = 0; i < backend.count("favorites"); ++i) {
                 const a = backend.appAt("favorites", i);
                 if (a && a.storageId) {
@@ -126,22 +183,14 @@ QtObject {
     // position: index in the favourites without the app itself (-1 = end)
     function addFavorite(storageId, position) {
         const id = normalizedFavorite(storageId);
-        if (favoritesShared) {
-            sharedFavorites.add(id, position);
-            return;
-        }
         let ids = currentFavoriteList().filter(x => x !== id);
         ids.splice(position >= 0 ? Math.min(position, ids.length) : ids.length, 0, id);
         writeConfig("FavoriteApps", ids);
     }
     function removeFavorite(storageId) {
         const id = normalizedFavorite(storageId);
-        if (favoritesShared) {
-            sharedFavorites.remove(id);
-            return;
-        }
         const ids = currentFavoriteList().filter(x => x !== id);
-        // an empty list means "launcher favourites"; keep one placeholder entry
+        // an empty value would mean "default favourites"; keep a placeholder
         writeConfig("FavoriteApps", ids.length > 0 ? ids : ["none.desktop"]);
     }
     // GNOME AppMenu "Quit": close every window of the app
@@ -372,6 +421,7 @@ QtObject {
                 if (obj) {
                     backend = obj;
                     console.info("kgnome-overview: using backend", obj.kind, "from", file);
+                    Qt.callLater(effect.seedFavorites);
                     return;
                 }
             }
@@ -590,8 +640,8 @@ QtObject {
     Component.onCompleted: {
         console.info("kgnome-overview: controller loaded from", Qt.resolvedUrl("."));
         devReady = true;
-        createSharedFavorites();
         createBackend();
+        seedFavorites();
         rebuildRunning();
         const dc = Qt.createComponent(Qt.resolvedUrl("DynamicWorkspaces.qml"));
         dyn = dc.status === Component.Ready ? dc.createObject(effect, {enabled: Qt.binding(() => effect.dynamicWorkspaces)}) : null;

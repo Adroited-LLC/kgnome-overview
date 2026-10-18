@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
-// Dash favourites shared two-way with a Plasma launcher (Kickoff) through
-// KActivities favourites: Plasma's private KAStatsFavoritesModel, initialised
-// for the launcher's client id (install.sh writes it to FavoritesClient).
-// Pin/unpin goes through kactivitymanagerd, so both sides see changes live;
+// Reads a Plasma launcher's KActivities favourites (Plasma's private
+// KAStatsFavoritesModel for the launcher's client id, e.g. Kickoff's). Only
+// used once, to seed the dash's own list (FavoriteApps) in the same order;
 // the order is the launcher's "ordering" in kactivitymanagerd-statsrc.
 import QtQuick
 import org.kde.plasma.private.kicker as Kicker
