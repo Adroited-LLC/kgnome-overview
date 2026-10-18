@@ -4,10 +4,10 @@
         "Category": "Application Launchers",
         "Description": "Opens the GNOME-style app grid of the kgnome-overview KWin effect",
         "Icon": "view-app-grid-symbolic",
-        "Id": "org.kgnome.overview.launcher",
+        "Id": "org.kgnome.overview.showapps",
         "License": "GPL-2.0-or-later",
-        "Name": "GNOME Overview Launcher",
-        "Version": "1.0"
+        "Name": "Show Applications (GNOME Overview)",
+        "Version": "1.1"
     },
     "KPackageStructure": "Plasma/Applet",
     "X-Plasma-API-Minimum-Version": "6.0",

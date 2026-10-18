@@ -3,6 +3,8 @@
 // through KWin's global shortcut component, like GNOME's "Show Apps".
 // Provides org.kde.plasma.launchermenu, so plasmashell's "Activate
 // Application Launcher" shortcut (Alt+F1) triggers it too.
+// Structure follows Plasma's Show Desktop applet (a full representation that
+// is just an icon button).
 import QtQuick
 import QtQuick.Layouts
 import org.kde.plasma.plasmoid
@@ -31,26 +33,30 @@ PlasmoidItem {
         onNewData: sourceName => disconnectSource(sourceName)
     }
 
+    preferredRepresentation: fullRepresentation
     Plasmoid.icon: Plasmoid.configuration.icon || "view-app-grid-symbolic"
     Plasmoid.title: i18n("Applications")
+    Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
+    Plasmoid.onActivated: root.open()
     toolTipMainText: i18n("Show Applications")
     toolTipSubText: ""
-    preferredRepresentation: compactRepresentation
-    activationTogglesExpanded: false
-    Plasmoid.onActivated: root.open()
 
-    compactRepresentation: MouseArea {
-        id: button
+    readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
+    Layout.minimumWidth: vertical ? Kirigami.Units.iconSizes.small : height
+    Layout.minimumHeight: vertical ? width : Kirigami.Units.iconSizes.small
+    Layout.preferredWidth: Layout.minimumWidth
+    Layout.preferredHeight: Layout.minimumHeight
+
+    MouseArea {
+        id: mouseArea
+        anchors.fill: parent
         hoverEnabled: true
-        acceptedButtons: Qt.LeftButton
         onClicked: root.open()
-        Layout.minimumWidth: Plasmoid.formFactor === PlasmaCore.Types.Horizontal ? height : Kirigami.Units.iconSizes.small
-        Layout.minimumHeight: Plasmoid.formFactor === PlasmaCore.Types.Vertical ? width : Kirigami.Units.iconSizes.small
 
         Kirigami.Icon {
             anchors.fill: parent
             source: Plasmoid.icon
-            active: button.containsMouse
+            active: mouseArea.containsMouse
         }
     }
 }
