@@ -25,9 +25,15 @@
 //  - no removals during the first STARTUP_GRACE_MS after the effect loads
 //    (session restore / scripts placing windows), only the trailing desktop
 //    is added;
-//  - if something keeps undoing our changes (more than MAX_CHANGES desktop
-//    additions/removals in CHANGE_WINDOW_MS, e.g. a script that enforces a
-//    fixed desktop count), stop and log instead of fighting it.
+//  - if something keeps undoing our changes (more than MAX_CHANGES automatic
+//    desktop additions/removals in CHANGE_WINDOW_MS *and* at least half as
+//    many desktop changes made by someone else in that time, e.g. a script
+//    that enforces a fixed desktop count), pause and log instead of fighting
+//    it; resume after a minute without outside changes. Our own changes,
+//    user drops/closes and effect reloads (settings dialog) can't trip it.
+//  - the check also runs when the effect loads, when the overview opens,
+//    when its settings change, and every 30 s, so the trailing desktop comes
+//    back whatever happened.
 import QtQuick
 import org.kde.kwin as KWinComponents
 
@@ -44,7 +50,9 @@ QtObject {
 
     property double loadedAt: Date.now()
     property bool suspended: false
-    property var changeLog: []           // timestamps of our own add/remove calls
+    property var changeLog: []           // timestamps of our automatic add/remove calls
+    property var externalLog: []         // timestamps of desktop changes not made by us
+    property bool selfChanging: false
     property var keepAlive: ({})         // desktop id -> ms timestamp until which it is kept
     property var lastRemoved: ({})       // desktop id -> ms timestamp (dialog/splash grace)
     // bumped after every check, so bindings on canClose() re-evaluate
@@ -85,11 +93,13 @@ QtObject {
         const log = changeLog.filter(t => now - t < changeWindowMs);
         log.push(now);
         changeLog = log;
-        if (log.length > maxChanges) {
+        const outside = externalLog.filter(t => now - t < changeWindowMs);
+        externalLog = outside;
+        if (log.length > maxChanges && outside.length >= maxChanges / 2) {
             suspended = true;
             console.warn("kgnome-overview: dynamic workspaces paused: desktops changed",
                          log.length, "times in", changeWindowMs / 1000,
-                         "s (another script managing desktops?). Toggle DynamicWorkspaces or reload the effect to resume.");
+                         "s (another script managing desktops?); resuming after a minute without outside changes.");
             return false;
         }
         return true;
@@ -115,6 +125,34 @@ QtObject {
             out.push(list[i]);
         }
         return out;
+    }
+
+    // desktop changes made here, so onDesktopsChanged can tell them apart
+    // A script reacting to desktopsChanged runs inside our call, so a change
+    // undone right away shows up as an unchanged desktop count.
+    function createAt(pos) {
+        const before = KWinComponents.Workspace.desktops.length;
+        selfChanging = true;
+        try {
+            KWinComponents.Workspace.createDesktop(pos, "");
+        } finally {
+            selfChanging = false;
+        }
+        if (KWinComponents.Workspace.desktops.length <= before) {
+            externalLog = externalLog.concat([Date.now()]);
+        }
+    }
+    function remove(desktop) {
+        const before = KWinComponents.Workspace.desktops.length;
+        selfChanging = true;
+        try {
+            KWinComponents.Workspace.removeDesktop(desktop);
+        } finally {
+            selfChanging = false;
+        }
+        if (KWinComponents.Workspace.desktops.length >= before) {
+            externalLog = externalLog.concat([Date.now()]);
+        }
     }
 
     function windowsOn(desktop) {
@@ -158,7 +196,7 @@ QtObject {
         }
         if (!empty[n - 1] || n < minWorkspaces) {
             if (noteChange()) {
-                ws.createDesktop(n, "");
+                createAt(n);
                 renumber();
                 queue();
             }
@@ -187,7 +225,7 @@ QtObject {
                 if (!noteChange()) {
                     break;
                 }
-                ws.removeDesktop(ds[i]);
+                remove(ds[i]);
                 count--;
                 removed = true;
             }
@@ -234,10 +272,7 @@ QtObject {
         const ws = KWinComponents.Workspace;
         const n = ws.desktops.length;
         const pos = Math.max(0, Math.min(n, index));
-        if (!noteChange()) {
-            return null;
-        }
-        ws.createDesktop(pos, "");
+        createAt(pos);
         renumber();
         const d = ws.desktops[pos] || null;
         // short keep-alive so the drop can land before the next check
@@ -283,7 +318,7 @@ QtObject {
             ws.currentDesktop = target;
         }
         console.info("kgnome-overview: closing desktop", desktop.name, "- windows moved to", target.name);
-        ws.removeDesktop(desktop);
+        remove(desktop);
         renumber();
         queue();
         return true;
@@ -291,7 +326,12 @@ QtObject {
 
     property Connections _workspace: Connections {
         target: KWinComponents.Workspace
-        function onDesktopsChanged() { dyn.queue(); }
+        function onDesktopsChanged() {
+            if (!dyn.selfChanging) {
+                dyn.externalLog = dyn.externalLog.concat([Date.now()]);
+            }
+            dyn.queue();
+        }
         function onCurrentDesktopChanged() { dyn.queue(); }   // GNOME: switch-workspace
         function onWindowAdded(w) {
             dyn.watch(w);
@@ -320,6 +360,21 @@ QtObject {
         id: checkTimer
         interval: 50
         onTriggered: dyn.check()
+    }
+    // safety net: re-check every 30 s; resume a pause after a quiet minute
+    property Timer safetyTimer: Timer {
+        interval: 30000
+        repeat: true
+        running: dyn.enabled
+        onTriggered: {
+            const now = Date.now();
+            if (dyn.suspended && dyn.externalLog.every(t => now - t > 60000)) {
+                console.info("kgnome-overview: dynamic workspaces resumed");
+                dyn.suspended = false;
+                dyn.changeLog = [];
+            }
+            dyn.queue();
+        }
     }
     property Timer graceTimer: Timer {
         id: graceTimer

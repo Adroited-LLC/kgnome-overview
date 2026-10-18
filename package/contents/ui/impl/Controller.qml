@@ -340,7 +340,16 @@ QtObject {
         console.warn("kgnome-overview: no backend could be loaded");
     }
 
+    // the trailing empty desktop must be there whenever the overview shows
+    // and after a settings change (DynamicWorkspaces.qml)
+    readonly property string cfgStamp: cfg ? [cfg.DynamicWorkspaces, cfg.Columns, cfg.Rows, cfg.IconSize, cfg.IconScale,
+                                             cfg.HotCorner, cfg.GestureFingers, cfg.DashIconSize, cfg.BlurBackground].join(",") : ""
+    onCfgStampChanged: if (dyn) dyn.queue()
+
     onVisibleChanged: {
+        if (dyn) {
+            dyn.queue();
+        }
         if (!visible) {
             stateAnim.stop();
             stateValue = 0;
