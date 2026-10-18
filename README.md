@@ -33,9 +33,11 @@ qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Toggle GNOME Overview
 
 ### Inside the overview
 
-- Typing starts a search. Results show matching apps first (ranked like GNOME),
-  then everything else from KRunner (Milou). `Enter` runs the first result.
-  `Down` or `Tab` moves into the KRunner list.
+- Typing starts a search (the search entry always keeps keyboard focus).
+  Results show matching apps first (ranked like GNOME), then everything else
+  from KRunner, grouped by category, without the apps already in the app row.
+  The arrow keys and `Tab` move the highlighted result (app row, then list);
+  `Enter` runs it (the first result by default).
 - `Esc` closes an open folder, then clears the search, then goes from the app
   grid back to the window picker, then closes the overview.
 - Touchpad (3 fingers by default): swipe up goes hidden → window picker → app
@@ -49,9 +51,16 @@ qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Toggle GNOME Overview
   overview. The scroll wheel or a two-finger touchpad scroll switches
   workspaces; `Ctrl+Alt+←/→` too.
 - Workspace thumbnails: click one to switch to that desktop.
-- App grid: drag anywhere (also starting on an icon), scroll with two fingers,
-  use the wheel, the side arrows, `←`/`→`, `PgUp`/`PgDn`, `Home`/`End` or a page
-  dot to change the page. Click an app to launch it (a running app is focused;
+- App grid: drag empty space, scroll with two fingers, use the wheel, the side
+  arrows, `←`/`→`, `PgUp`/`PgDn`, `Home`/`End` or a page dot to change the page.
+  Dragging an icon moves it: drop it between icons to reorder (the others make
+  room after 200 ms), on another app's centre to create a folder (named after
+  the menu category both share, else "Unnamed Folder"), on a folder to add it,
+  on the dash to add a favourite, or on a workspace (thumbnail or the strip at
+  the top) to launch it there. Rest at the left/right edge for 1 s to flip the
+  page. In a folder, drag an app out of the dialog to take it out of the
+  folder (a folder left with one app dissolves); click the folder name to
+  rename it. The arrangement is saved. Click an app to launch it (a running app is focused;
   middle- or Ctrl-click opens a new window). Click a folder to open it. Click
   empty space to go back to the window picker. Clicking a workspace in the
   strip at the top activates it.
@@ -97,6 +106,16 @@ Settings live in the effect's settings dialog or in kwinrc
   the dash uses the Plasma launcher (Kickoff) favourites from
   `kactivitymanagerd-statsrc`.
 - `Backend` (auto): `module`, `local` or `kicker`, to force an app backend.
+- `IconSize` (112): app grid icon size in px; steps down through GNOME's
+  sizes if the grid doesn't fit. `0` = GNOME's automatic 96/64/48/... sizes.
+- `Columns` (10): app grid columns. `0` = GNOME's 8×3/6×4/4×6/3×8 modes.
+- `Rows` (0): app grid rows; `0` picks the row count closest to the screen
+  shape that fits. GNOME's spacing logic (12 px, at most 36 px) is kept.
+  These apply live when saved in the settings dialog (or after
+  `qdbus org.kde.KWin /Effects org.kde.kwin.Effects.reconfigureEffect kgnomeoverview`).
+- `AppLayout` / `AppFolders`: written by the overview when you rearrange the
+  grid. Delete both keys to go back to alphabetical order and the default
+  folders.
 - `GestureFingers` (3): fingers for the touchpad swipes, `0` turns them off.
   The swipe-up gesture is registered globally, so apps no longer get 3-finger
   swipe-up; the other directions exist only while the overview is open.
@@ -189,9 +208,10 @@ Sources: gnome-shell `gnome-50` branch, `js/ui/overviewControls.js`,
 
 - Keyboard focus/selection of individual windows and app icons is not
   implemented. The arrow keys change app-grid pages.
-- App icons can't be dragged (no reordering, no drag to the dash or to a
-  workspace, no creating folders by dropping). Folders come from the
-  `AppFolders` setting and can't be renamed in the dialog.
+- Dash favourites added by dropping are stored in `FavoriteApps` (the
+  Plasma launcher favourites are copied there on the first drop), so the
+  dash and Kickoff stop sharing favourites after that. The dash can't be
+  reordered and drops always append.
 - Touchpad swipes move one step per gesture (hidden → picker or picker → grid),
   not continuously through both like GNOME.
 - Panels are covered by the overview (they fade out, as in KWin's Overview).
