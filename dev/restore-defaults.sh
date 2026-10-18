@@ -44,11 +44,20 @@ if [[ "${RESTORE_STATSRC:-0}" == 1 && -f "$SRC/kactivitymanagerd-statsrc" ]]; th
     echo "   kactivitymanagerd-statsrc"
 fi
 
+# live shortcut registry (kglobalaccel lives in KWin): Meta+W back to the
+# built-in Overview, ours back to Meta+O only
+keys() {
+    gdbus call --session --dest org.kde.kglobalaccel --object-path /kglobalaccel \
+        --method org.kde.KGlobalAccel.setForeignShortcutKeys "['kwin','$1','KWin','$2']" "$3" >/dev/null || true
+}
+keys "Toggle GNOME Overview" "Toggle GNOME Overview" "[([268435535, 0, 0, 0],)]"
+keys "Overview" "Toggle Overview" "[([268435543, 0, 0, 0],)]"
+
 "$QDBUS" org.kde.KWin /KWin reconfigure >/dev/null
 "$QDBUS" org.kde.KWin /Effects loadEffect overview >/dev/null || true
 echo "   overview loaded: $("$QDBUS" org.kde.KWin /Effects isEffectLoaded overview)"
 cat <<MSG
-Done. KWin settings (Meta key, edges, effects) are live again. Shortcut
-rebinds in kglobalshortcutsrc and the exact panel layout are fully back after
-the next login (the panel already has Kickoff again if the script above ran).
+Done. KWin settings (Meta key, edges, effects, Meta+W) are live again. The
+exact panel layout is fully back after the next login (the panel already has
+Kickoff again if the script above ran).
 MSG

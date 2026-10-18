@@ -55,7 +55,37 @@ step_corner() {
          "ours HotCorner=$(kreadconfig6 --file kwinrc --group "$GROUP" --key HotCorner)"
 }
 
-STEPS=(meta corner)
+# kglobalaccel helpers (key codes are Qt key combinations)
+META_W=268435543   # Qt::META | Qt::Key_W
+META_O=268435535   # Qt::META | Qt::Key_O
+set_keys() {  # set_keys <action> <friendly> <gvariant a(ai)>
+    gdbus call --session --dest org.kde.kglobalaccel --object-path /kglobalaccel \
+        --method org.kde.KGlobalAccel.setForeignShortcutKeys "['kwin','$1','KWin','$2']" "$3" >/dev/null
+}
+get_keys() {
+    gdbus call --session --dest org.kde.kglobalaccel --object-path /kglobalaccel \
+        --method org.kde.KGlobalAccel.shortcutKeys "['kwin','$1','KWin','$2']"
+}
+
+# 3. Switch off the built-in Overview (its gestures, edges and shortcuts go
+#    with it) and give Meta+W to ours (Meta+O keeps working)
+step_builtin() {
+    echo ">> Built-in Overview off, Meta+W -> GNOME overview"
+    kwriteconfig6 --file kwinrc --group Plugins --key overviewEnabled false
+    reconfigure
+    if [[ "$("$QDBUS" org.kde.KWin /Effects isEffectLoaded overview)" == "true" ]]; then
+        "$QDBUS" org.kde.KWin /Effects unloadEffect overview >/dev/null
+    fi
+    set_keys "Overview" "Toggle Overview" "@a(ai) []"
+    set_keys "Toggle GNOME Overview" "Toggle GNOME Overview" "[([$META_O, 0, 0, 0],), ([$META_W, 0, 0, 0],)]"
+    echo "   overviewEnabled=$(kreadconfig6 --file kwinrc --group Plugins --key overviewEnabled)" \
+         "loaded: overview=$("$QDBUS" org.kde.KWin /Effects isEffectLoaded overview)" \
+         "kgnomeoverview=$("$QDBUS" org.kde.KWin /Effects isEffectLoaded kgnomeoverview)"
+    echo "   Overview keys: $(get_keys "Overview" "Toggle Overview")"
+    echo "   Toggle GNOME Overview keys: $(get_keys "Toggle GNOME Overview" "Toggle GNOME Overview")"
+}
+
+STEPS=(meta corner builtin)
 [[ $# -gt 0 ]] && STEPS=("$@")
 backup
 for s in "${STEPS[@]}"; do
