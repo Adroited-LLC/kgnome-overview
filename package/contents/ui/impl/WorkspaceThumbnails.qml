@@ -190,6 +190,45 @@ Item {
                     id: thumbHover
                 }
 
+                // "+" on the trailing empty desktop (dynamic workspaces): drop
+                // a window or app here for a new desktop. Not in GNOME.
+                property bool newSlot: false
+                function updateNewSlot() {
+                    const dyn = box.screenView.effect.dyn;
+                    newSlot = dyn !== null && dyn.enabled && !dyn.suspended && index === box.count - 1
+                              && box.count > 1 && dyn.isEmpty(desktop);
+                }
+                onIndexChanged: updateNewSlot()
+                Component.onCompleted: updateNewSlot()
+                Connections {
+                    target: box
+                    function onCountChanged() { thumb.updateNewSlot(); }
+                }
+                Connections {
+                    target: box.screenView.effect.dyn
+                    function onRevisionChanged() { thumb.updateNewSlot(); }
+                }
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: Math.round(Math.min(parent.height * 0.42, 40 * box.screenView.s))
+                    height: width
+                    radius: width / 2
+                    color: Qt.rgba(0.27, 0.27, 0.29, 0.96)
+                    border.width: Math.max(1, Math.round(box.screenView.s))
+                    border.color: Qt.rgba(1, 1, 1, 0.15)
+                    opacity: thumb.newSlot ? (area.containsMouse || box.screenView.dropDesktop === thumb.desktop ? 1 : 0.9) : 0
+                    visible: opacity > 0
+                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    Kirigami.Icon {
+                        anchors.centerIn: parent
+                        width: Math.round(parent.width * 0.55)
+                        height: width
+                        source: "list-add-symbolic"
+                        color: "white"
+                        isMask: true
+                    }
+                }
+
                 // hover x: close this desktop, its windows move next door
                 DesktopCloseButton {
                     z: 10
