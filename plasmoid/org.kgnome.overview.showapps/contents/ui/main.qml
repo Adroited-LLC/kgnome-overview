@@ -11,6 +11,7 @@ import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasma5support as P5Support
+import "Commands.js" as Commands
 
 PlasmoidItem {
     id: root
@@ -25,6 +26,19 @@ PlasmoidItem {
                   + shortcutName + "'";
         executable.connectSource(cmd);
     }
+
+    function openSettings() {
+        executable.connectSource(Commands.effectSettings);
+    }
+
+    // right-click menu: next to Plasma's own "Configure Show Applications…"
+    Plasmoid.contextualActions: [
+        PlasmaCore.Action {
+            text: i18n("Overview Settings…")
+            icon.name: "configure"
+            onTriggered: root.openSettings()
+        }
+    ]
 
     P5Support.DataSource {
         id: executable

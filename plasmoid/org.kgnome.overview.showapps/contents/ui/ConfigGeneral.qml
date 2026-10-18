@@ -5,10 +5,25 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.iconthemes as KIconThemes
 import org.kde.kcmutils as KCM
+import org.kde.plasma.plasma5support as P5Support
+import "Commands.js" as Commands
 
 KCM.SimpleKCM {
     property string cfg_icon
     property string cfg_target
+    // set by plasmashell's config dialog for every key; declared so it
+    // doesn't warn
+    property string cfg_iconDefault
+    property string cfg_targetDefault
+    property var cfg_expanding
+    property var cfg_length
+
+    P5Support.DataSource {
+        id: executable
+        engine: "executable"
+        connectedSources: []
+        onNewData: sourceName => disconnectSource(sourceName)
+    }
 
     Kirigami.FormLayout {
         QQC2.Button {
@@ -37,6 +52,15 @@ KCM.SimpleKCM {
             model: [i18n("App grid"), i18n("Window picker")]
             currentIndex: cfg_target === "overview" ? 1 : 0
             onActivated: index => cfg_target = index === 1 ? "overview" : "appgrid"
+        }
+        Item {
+            Kirigami.FormData.isSection: true
+        }
+        QQC2.Button {
+            Kirigami.FormData.label: i18n("Overview:")
+            text: i18n("Overview Settings…")
+            icon.name: "configure"
+            onClicked: executable.connectSource(Commands.effectSettings)
         }
     }
 }
