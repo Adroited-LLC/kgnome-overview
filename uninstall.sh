@@ -14,6 +14,12 @@ if [[ -n "$QDBUS" ]] && "$QDBUS" org.kde.KWin /Effects >/dev/null 2>&1; then
     fi
 fi
 kwriteconfig6 --file kwinrc --group Plugins --key "${EFFECT_ID}Enabled" --delete || true
+kwriteconfig6 --file kwinrc --group "Effect-$EFFECT_ID" --key ImplDir --delete || true
+
+WAYLAND_LINK="${XDG_DATA_HOME:-$HOME/.local/share}/kwin-wayland/effects/$EFFECT_ID"
+if [[ -L "$WAYLAND_LINK" ]]; then
+    rm -f "$WAYLAND_LINK"
+fi
 
 echo ">> Removing effect package"
 kpackagetool6 --type KWin/Effect --remove "$EFFECT_ID" 2>/dev/null || true

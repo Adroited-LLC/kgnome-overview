@@ -20,6 +20,10 @@
             <label>Toggle the overview from the top-right screen corner.</label>
             <default>false</default>
         </entry>
+        <entry name="ImplDir" type="String">
+            <label>Implementation directory under contents/ui (written by install.sh)</label>
+            <default>impl</default>
+        </entry>
         <entry name="Backend" type="String">
             <label>auto, module, local or kicker</label>
             <default>auto</default>

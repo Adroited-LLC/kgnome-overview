@@ -47,6 +47,33 @@ QtObject {
         filterCaseSensitivity: Qt.CaseInsensitive
     }
 
+    property int revision: 0
+    readonly property list<Connections> _watchers: [
+        Connections { target: backend.apps; function onModelReset() { backend.revision++ } function onCountChanged() { backend.revision++ } },
+        Connections { target: backend.favorites; function onModelReset() { backend.revision++ } function onCountChanged() { backend.revision++ } },
+        Connections { target: backend.searchApps; function onModelReset() { backend.revision++ } function onCountChanged() { backend.revision++ } function onRowsInserted() { backend.revision++ } function onRowsRemoved() { backend.revision++ } }
+    ]
+
+    function modelFor(which) {
+        return which === "favorites" ? favorites : which === "search" ? searchApps : apps;
+    }
+    function count(which) {
+        const m = modelFor(which);
+        return m ? m.count : 0;
+    }
+    function appAt(which, row) {
+        const m = modelFor(which);
+        if (!m || row < 0 || row >= m.count) {
+            return null;
+        }
+        const idx = m.index(row, 0);
+        let id = m.data(idx, Qt.UserRole + 3) || ""; // Kicker FavoriteIdRole
+        if (id.startsWith("applications:")) {
+            id = id.substring(13);
+        }
+        return {name: m.data(idx, Qt.DisplayRole), iconName: "", iconPath: "", icon: m.data(idx, Qt.DecorationRole), storageId: id};
+    }
+
     function launch(which, row) {
         if (which === "favorites") {
             return favorites.trigger(row, "", null);
