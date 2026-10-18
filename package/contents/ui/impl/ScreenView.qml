@@ -163,14 +163,15 @@ FocusScope {
                 g.dragLeave();
             }
         }
+        if (target.type === "none" && kind === "app" && pointIn(dash, p)) {
+            target = dash.dragHover(dash.mapFromItem(root, p.x, p.y), iconDrag.entry.id);
+        } else {
+            dash.dragLeave();
+        }
         if (target.type === "none" && kind === "app") {
-            if (pointIn(dash, p)) {
-                target = {type: "dash"};
-            } else {
-                const d = desktopAtPoint(p);
-                if (d) {
-                    target = {type: "desktop", desktop: d};
-                }
+            const d = desktopAtPoint(p);
+            if (d) {
+                target = {type: "desktop", desktop: d};
             }
         }
         dashDropHover = target.type === "dash";
@@ -184,6 +185,7 @@ FocusScope {
         const insertAt = target && target.grid ? target.grid.dropInsertAt() : -1;
         const targetEntry = target && target.type === "folder" ? target.grid.entries[target.index] : null;
         const sourceIndex = drag ? drag.source.dragEntryIndex : -1;
+        const fromDash = drag !== null && drag.source === dash;
         const wasOut = folderDialog.dragOut;
         iconDrag = null;
         iconDropTarget = {type: "none"};
@@ -191,6 +193,7 @@ FocusScope {
         dropDesktop = null;
         appGrid.paged.dragEnd();
         folderDialog.grid.dragEnd();
+        dash.dragEnd();
         folderDialog.dragOut = false;
         if (!drag || !p) {
             return;
@@ -198,25 +201,36 @@ FocusScope {
         const e = drag.entry;
         const model = effect.appLayout;
         const fromFolder = drag.fromFolder;
+        // GNOME AppDisplay.acceptDrop: a favourite dropped on the grid is unpinned
+        const unpinOnGridDrop = fromDash && effect.isFavorite(e.id);
         if (wasOut) {
             effect.folderOpen = "";
         }
-        if (!model) {
-            return;
-        }
         switch (target.type) {
         case "folder":
+            if (!model) {
+                break;
+            }
             if (targetEntry.kind === "folder") {
                 model.addToFolder(e.id, targetEntry.name);
             } else {
                 const name = effect.sharedCategory([e.id, targetEntry.id]) || "Unnamed Folder";
                 model.createFolder(e.id, targetEntry.id, name);
             }
+            if (unpinOnGridDrop) {
+                effect.removeFavorite(e.id);
+            }
             break;
         case "reorder":
+            if (!model) {
+                break;
+            }
             if (target.grid === appGrid.paged) {
-                if (fromFolder || insertAt !== sourceIndex) {
+                if (fromDash || fromFolder || insertAt !== sourceIndex) {
                     model.moveTo(e.id, insertAt);
+                }
+                if (unpinOnGridDrop) {
+                    effect.removeFavorite(e.id);
                 }
             } else if (target.grid === folderDialog.grid && fromFolder) {
                 if (insertAt !== sourceIndex) {
@@ -225,18 +239,35 @@ FocusScope {
             }
             break;
         case "dash":
-            effect.addFavorite(e.id, -1);
+            // Dash.acceptDrop: addFavoriteAtPos / moveFavoriteToPos
+            if (target.pos >= 0) {
+                effect.addFavorite(e.id, target.pos);
+            }
+            break;
+        case "unpin":
+            effect.removeFavorite(e.id);
             break;
         case "desktop":
             effect.launchOnDesktop(e.id, target.desktop);
             break;
         default:
-            // dropped outside any target after leaving the folder: take it out
-            if (fromFolder && wasOut) {
+            if (fromDash) {
+                // dragged well off the dash and dropped elsewhere: unpin
+                if (effect.isFavorite(e.id) && dash.mapFromItem(root, p.x, p.y).y < -dash.itemSize) {
+                    effect.removeFavorite(e.id);
+                }
+            } else if (fromFolder && wasOut && model) {
+                // dropped outside any target after leaving the folder: take it out
                 model.moveTo(e.id, appGrid.entries.length);
             }
             break;
         }
+    }
+
+    // --- app context menu (GNOME AppMenu) --------------------------------------------
+    property string appMenuFor: ""      // app id (no .desktop) or ""
+    function openAppMenu(id, p, above) {
+        appMenu.open(id, p, above);
     }
 
     readonly property bool searchResultsFocused: searchResults.resultsFocused
@@ -245,6 +276,14 @@ FocusScope {
     }
 
     function handleKey(event) {
+        if (appMenuFor.length > 0) {
+            if (event.key === Qt.Key_Escape) {
+                appMenu.close();
+                event.accepted = true;
+                return;
+            }
+            appMenu.close();
+        }
         if (event.key === Qt.Key_Escape) {
             if (effect.folderOpen.length > 0) {
                 effect.folderOpen = "";
@@ -532,7 +571,8 @@ FocusScope {
         AsyncIcon {
             anchors.fill: parent
             visible: parent.entry !== null && parent.entry.kind === "app"
-            readonly property var app: visible && effect.backend ? effect.backend.appAt("apps", parent.entry.index) : null
+            readonly property var app: !visible ? null : parent.entry.app ? parent.entry.app
+                                       : effect.backend ? effect.backend.appAt("apps", parent.entry.index) : null
             size: root.iconDragSize
             iconPath: app ? app.iconPath : ""
             fallback: app ? app.icon : ""
@@ -548,6 +588,13 @@ FocusScope {
             backend: effect.backend
             folder: visible ? parent.entry : null
         }
+    }
+
+    AppMenu {
+        id: appMenu
+        z: 98
+        anchors.fill: parent
+        screenView: root
     }
 
     // Shown only if no backend could be created at all.

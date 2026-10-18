@@ -46,6 +46,7 @@ Item {
     }
 
     signal entryActivated(var entry, int button, int modifiers)
+    signal entryMenu(var entry, point screenPoint)
     signal emptyClicked()
 
     readonly property int pageWidth: Math.max(1, width)
@@ -411,7 +412,7 @@ Item {
         height: grid.pageHeight
         enabled: grid.enabled
         hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+        acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
         preventStealing: true
 
         property real pressX: 0
@@ -487,6 +488,12 @@ Item {
             }
             const index = grid.hitTest(mouse.x, mouse.y);
             grid.pressIndex = -1;
+            if (mouse.button === Qt.RightButton) {
+                if (index >= 0) {
+                    grid.entryMenu(grid.entries[index], toScreen(mouse));
+                }
+                return;
+            }
             if (index >= 0) {
                 grid.entryActivated(grid.entries[index], mouse.button, mouse.modifiers);
             } else if (mouse.button === Qt.LeftButton) {

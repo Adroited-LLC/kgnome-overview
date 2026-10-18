@@ -174,6 +174,7 @@ Item {
             onEntryActivated: (entry, button, modifiers) => {
                 dialog.effect.launchApp("apps", entry.index, button, modifiers);
             }
+            onEntryMenu: (entry, p) => dialog.screenView.openAppMenu(entry.id, p, true)
             onEmptyClicked: dialog.finishRename(true)
         }
     }

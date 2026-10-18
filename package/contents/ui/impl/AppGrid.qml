@@ -70,6 +70,11 @@ Item {
                 appGrid.effect.launchApp("apps", entry.index, button, modifiers);
             }
         }
+        onEntryMenu: (entry, p) => {
+            if (entry.kind === "app") {
+                appGrid.screenView.openAppMenu(entry.id, p, true);
+            }
+        }
         onEmptyClicked: appGrid.effect.setState(appGrid.effect.stateWindowPicker)
     }
 }

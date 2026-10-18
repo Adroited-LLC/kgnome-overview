@@ -6,8 +6,20 @@
     <kcfgfile name=""/>
     <group name="">
         <entry name="FavoriteApps" type="StringList">
-            <label>Desktop file ids for the dash. Empty: use the Plasma launcher favourites.</label>
+            <label>Dash favourites (desktop file ids), used only when FavoritesClient is empty or the Plasma favourites model cannot be loaded.</label>
             <default></default>
+        </entry>
+        <entry name="FavoritesClient" type="String">
+            <label>KActivities favourites client shared with the launcher, e.g. org.kde.plasma.kickoff.favorites.instance-118 (set by install.sh). Empty: use FavoriteApps.</label>
+            <default></default>
+        </entry>
+        <entry name="HideFavoritesInGrid" type="Bool">
+            <label>Like GNOME, don't show dash favourites in the app grid and folders.</label>
+            <default>true</default>
+        </entry>
+        <entry name="DashIconSize" type="Int">
+            <label>Largest dash icon size in px (GNOME: 64); smaller GNOME sizes are used if the dash does not fit.</label>
+            <default>64</default>
         </entry>
         <entry name="SearchFocusReturnMs" type="Int">
             <label>Milliseconds after the last arrow key in the search results before the text cursor returns to the search entry (the highlighted result stays selected). 0 = off (GNOME).</label>

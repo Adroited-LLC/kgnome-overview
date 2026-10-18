@@ -33,11 +33,18 @@ qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Toggle GNOME Overview
 
 ### Inside the overview
 
-- Typing starts a search (the search entry always keeps keyboard focus).
-  Results show matching apps first (ranked like GNOME), then everything else
-  from KRunner, grouped by category, without the apps already in the app row.
-  The arrow keys and `Tab` move the highlighted result (app row, then list);
-  `Enter` runs it (the first result by default).
+- Typing starts a search. Results show matching apps first (ranked like
+  GNOME), then everything else from KRunner, grouped by category, without the
+  apps already in the app row. Keys follow GNOME 50 (`searchController.js`):
+  with the cursor in the entry the first result is the default and `Enter`
+  runs it; `↓`, `Tab`, `Shift+Tab` or `→` at the end of the text move keyboard
+  focus into the results (focus ring, text cursor hidden), where the arrows and
+  `Tab` move it and `Enter` runs the focused result. Typing or `Backspace`
+  goes back to the entry and edits the text (the default goes back to the
+  first result); `↑` from the top row returns to the entry.
+  Not in GNOME: `SearchFocusReturnMs` (250 ms) after the last arrow key the
+  cursor returns to the entry while the highlighted result stays selected, so
+  `Enter` still runs it and `←`/`→` edit the text again.
 - `Esc` closes an open folder, then clears the search, then goes from the app
   grid back to the window picker, then closes the overview.
 - Touchpad (3 fingers by default): swipe up goes hidden → window picker → app
@@ -56,7 +63,7 @@ qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Toggle GNOME Overview
   Dragging an icon moves it: drop it between icons to reorder (the others make
   room after 200 ms), on another app's centre to create a folder (named after
   the menu category both share, else "Unnamed Folder"), on a folder to add it,
-  on the dash to add a favourite, or on a workspace (thumbnail or the strip at
+  on the dash to pin it at that position, or on a workspace (thumbnail or the strip at
   the top) to launch it there. Rest at the left/right edge for 1 s to flip the
   page. In a folder, drag an app out of the dialog to take it out of the
   folder (a folder left with one app dissolves); click the folder name to
@@ -64,9 +71,19 @@ qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Toggle GNOME Overview
   middle- or Ctrl-click opens a new window). Click a folder to open it. Click
   empty space to go back to the window picker. Clicking a workspace in the
   strip at the top activates it.
-- Dash: click a running app to focus it. Click an app that isn't running to
-  launch it. Ctrl-click or middle-click always opens a new instance. The grid
-  button at the end toggles the app grid.
+- Dash (GNOME `dash.js`): favourites, then running apps that aren't
+  favourites after a separator, then the Show Apps button. Click a running
+  app to focus it, an app that isn't running to launch it; Ctrl- or
+  middle-click opens a new window. Drag icons to reorder (a gap opens where
+  they will land); drag a favourite onto the Show Apps button (it turns into
+  an "Unpin" bin while you drag), onto the app grid (where it lands at the drop
+  position, like GNOME) or well away from the dash to unpin it. Drag a running
+  app or a grid icon into the dash to pin it at that position. Right-click
+  (dash, grid, folders): New Window, Pin to Dash / Unpin, Quit (closes its
+  windows, shown while running).
+- Favourites are shared two-way with Kickoff (KActivities favourites, the
+  same list and order Kickoff shows). Like GNOME, favourites are not shown in
+  the app grid (`HideFavoritesInGrid`).
 
 ## Build / install / uninstall
 
@@ -102,9 +119,19 @@ Settings live in the effect's settings dialog or in kwinrc
 - `IconScale` (1.0): multiplier for the GNOME icon sizes (96 px grid, 64 px dash
   at most). Useful at scale 1 on a 4K screen.
 - `TopRightCorner` (false): toggle the overview from the top-right corner.
-- `FavoriteApps` (empty): comma-separated desktop ids for the dash. If empty,
-  the dash uses the Plasma launcher (Kickoff) favourites from
-  `kactivitymanagerd-statsrc`.
+- `FavoritesClient` (set by install.sh, e.g.
+  `org.kde.plasma.kickoff.favorites.instance-118`): the launcher whose
+  KActivities favourites the dash shares, through Plasma's
+  `KAStatsFavoritesModel`. Set it to an empty value to use `FavoriteApps`.
+- `FavoriteApps` (empty): comma-separated desktop ids for the dash, only used
+  without `FavoritesClient`. If empty, the dash shows the Kickoff favourites
+  read-only.
+- `HideFavoritesInGrid` (true): like GNOME, favourites aren't in the grid or
+  folders (they keep their folder and position for when they are unpinned).
+- `DashIconSize` (64): largest dash icon size; GNOME's 48/32/24/22/16 are
+  used if the dash doesn't fit.
+- `SearchFocusReturnMs` (250): see the search keys above; `0` = GNOME's
+  behaviour (focus stays on the result until you type).
 - `Backend` (auto): `module`, `local` or `kicker`, to force an app backend.
 - `IconSize` (112): app grid icon size in px; steps down through GNOME's
   sizes if the grid doesn't fit. `0` = GNOME's automatic 96/64/48/... sizes.
@@ -208,15 +235,12 @@ Sources: gnome-shell `gnome-50` branch, `js/ui/overviewControls.js`,
 
 - Keyboard focus/selection of individual windows and app icons is not
   implemented. The arrow keys change app-grid pages.
-- Dash favourites added by dropping are stored in `FavoriteApps` (the
-  Plasma launcher favourites are copied there on the first drop), so the
-  dash and Kickoff stop sharing favourites after that. The dash can't be
-  reordered and drops always append.
+- Search focus on a result is logical: Qt keyboard focus stays in the text
+  field (so KRunner model resets can't swallow keys); it looks and behaves
+  like GNOME's.
+- The app menu has no per-window entries, "App Details" or GPU launch item.
 - Touchpad swipes move one step per gesture (hidden → picker or picker → grid),
   not continuously through both like GNOME.
 - Panels are covered by the overview (they fade out, as in KWin's Overview).
-- KRunner (Milou) results can repeat apps that are already in the Applications
-  row. While focus is in the KRunner list, typing does not go back to the
-  search entry.
 - Multi-monitor: one overview per screen with a shared search text. Only tested
   on a single 4K monitor.

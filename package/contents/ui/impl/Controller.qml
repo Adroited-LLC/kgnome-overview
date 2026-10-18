@@ -30,8 +30,31 @@ QtObject {
     readonly property var cfg: sceneEffect.configuration
     readonly property real iconScale: (cfg && cfg.IconScale > 0) ? cfg.IconScale : 1.0
     readonly property bool blurBackground: cfg ? cfg.BlurBackground !== false : true
-    readonly property var favoriteIds: (cfg && cfg.FavoriteApps) ? cfg.FavoriteApps.filter(s => s.length > 0) : []
+    readonly property var configFavoriteIds: (cfg && cfg.FavoriteApps) ? cfg.FavoriteApps.filter(s => s.length > 0) : []
+    // dash favourites: shared with Kickoff (Favorites.qml) or FavoriteApps
+    readonly property string favoritesClient: (cfg && cfg.FavoritesClient) ? String(cfg.FavoritesClient) : ""
+    property QtObject sharedFavorites: null
+    readonly property bool favoritesShared: sharedFavorites !== null && sharedFavorites.ready
+    readonly property var favoriteIds: favoritesShared ? sharedFavorites.ids : configFavoriteIds
+    readonly property bool hideFavoritesInGrid: cfg ? cfg.HideFavoritesInGrid !== false : true
+    readonly property int dashIconSize: (cfg && cfg.DashIconSize > 0) ? cfg.DashIconSize : 64
     readonly property int searchFocusReturnMs: (cfg && cfg.SearchFocusReturnMs !== undefined) ? cfg.SearchFocusReturnMs : 250
+    onFavoritesClientChanged: createSharedFavorites()
+    function createSharedFavorites() {
+        if (sharedFavorites && sharedFavorites.client === favoritesClient) {
+            return;
+        }
+        if (sharedFavorites) {
+            sharedFavorites.destroy();
+            sharedFavorites = null;
+        }
+        if (favoritesClient.length === 0) {
+            return;
+        }
+        const c = Qt.createComponent(Qt.resolvedUrl("Favorites.qml"));
+        sharedFavorites = c.status === Component.Ready ? c.createObject(effect, {client: favoritesClient}) : null;
+        console.info("kgnome-overview: favourites", sharedFavorites ? "shared with " + favoritesClient : "from FavoriteApps (" + c.errorString().trim() + ")");
+    }
     readonly property int gestureFingers: (cfg && cfg.GestureFingers !== undefined) ? cfg.GestureFingers : 3
     // App grid size: IconSize px (0 = GNOME's automatic 96..16), Columns
     // (0 = GNOME's 8x3/6x4/4x6/3x8 modes), Rows (0 = automatic)
@@ -68,10 +91,17 @@ QtObject {
         }
     }
 
-    // GNOME: dropping an app on the dash makes it a favourite. The Plasma
-    // launcher favourites are copied into FavoriteApps on the first change.
-    function addFavorite(storageId, position) {
-        let ids = favoriteIds.slice();
+    // Favourites (GNOME AppFavorites: addFavoriteAtPos, moveFavoriteToPos,
+    // removeFavorite). Without a shared launcher list the current dash is
+    // copied into FavoriteApps on the first change.
+    function normalizedFavorite(storageId) {
+        return storageId.endsWith(".desktop") ? storageId : storageId + ".desktop";
+    }
+    function isFavorite(storageId) {
+        return favoriteIds.indexOf(normalizedFavorite(storageId)) >= 0;
+    }
+    function currentFavoriteList() {
+        let ids = configFavoriteIds.slice();
         if (ids.length === 0 && backend) {
             for (let i = 0; i < backend.count("favorites"); ++i) {
                 const a = backend.appAt("favorites", i);
@@ -80,10 +110,40 @@ QtObject {
                 }
             }
         }
-        const id = storageId.endsWith(".desktop") ? storageId : storageId + ".desktop";
-        ids = ids.filter(x => x !== id);
+        return ids;
+    }
+    // position: index in the favourites without the app itself (-1 = end)
+    function addFavorite(storageId, position) {
+        const id = normalizedFavorite(storageId);
+        if (favoritesShared) {
+            sharedFavorites.add(id, position);
+            return;
+        }
+        let ids = currentFavoriteList().filter(x => x !== id);
         ids.splice(position >= 0 ? Math.min(position, ids.length) : ids.length, 0, id);
         writeConfig("FavoriteApps", ids);
+    }
+    function removeFavorite(storageId) {
+        const id = normalizedFavorite(storageId);
+        if (favoritesShared) {
+            sharedFavorites.remove(id);
+            return;
+        }
+        const ids = currentFavoriteList().filter(x => x !== id);
+        // an empty list means "launcher favourites"; keep one placeholder entry
+        writeConfig("FavoriteApps", ids.length > 0 ? ids : ["none.desktop"]);
+    }
+    // GNOME AppMenu "Quit": close every window of the app
+    function quitApp(storageId) {
+        const wins = windowsFor(storageId).slice();
+        for (const w of wins) {
+            w.closeWindow();
+        }
+    }
+    function newWindow(storageId) {
+        if (backend && backend.launchId(normalizedFavorite(storageId))) {
+            hide();
+        }
     }
     function launchOnDesktop(storageId, desktop) {
         if (desktop && KWinComponents.Workspace.currentDesktop !== desktop) {
@@ -282,6 +342,9 @@ QtObject {
     // Running apps by desktop file name (dash and grid running dots).
     // Workspace.stackingOrder has no change signal, so rebuild on window events.
     property var runningWindows: ({})
+    // running apps in the order they started (GNOME's dash keeps running
+    // non-favourites after the separator)
+    property var runningIds: []
     function rebuildRunning() {
         const map = {};
         const order = KWinComponents.Workspace.stackingOrder;
@@ -293,6 +356,15 @@ QtObject {
             (map[w.desktopFileName] = map[w.desktopFileName] || []).push(w);
         }
         runningWindows = map;
+        const ids = runningIds.filter(id => map[id] !== undefined);
+        for (const id in map) {
+            if (ids.indexOf(id) < 0) {
+                ids.push(id);
+            }
+        }
+        if (ids.join(",") !== runningIds.join(",")) {
+            runningIds = ids;
+        }
     }
     function windowsFor(storageId) {
         if (!storageId) {
@@ -407,6 +479,7 @@ QtObject {
 
     Component.onCompleted: {
         console.info("kgnome-overview: controller loaded from", Qt.resolvedUrl("."));
+        createSharedFavorites();
         createBackend();
         rebuildRunning();
         const lc = Qt.createComponent(Qt.resolvedUrl("AppLayoutModel.qml"));

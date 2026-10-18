@@ -35,14 +35,28 @@ QtObject {
         return map;
     }
 
+    // GNOME (appDisplay.js _loadApps): favourites are not in the grid or folders
+    readonly property var hidden: {
+        const set = {};
+        if (effect.hideFavoritesInGrid) {
+            for (const id of effect.favoriteIds) {
+                set[F.normalizeId(id)] = true;
+            }
+        }
+        return set;
+    }
+
     function appEntry(id) {
+        if (hidden[id]) {
+            return null;
+        }
         const a = installed[id];
         return a ? {kind: "app", id: id, index: a.row, name: a.name} : null;
     }
     function folderEntry(folder) {
         const apps = [], appIds = [];
         for (const id of folder.ids) {
-            const a = installed[id];
+            const a = hidden[id] ? null : installed[id];
             if (a) {
                 apps.push(a.row);
                 appIds.push(id);
@@ -89,7 +103,7 @@ QtObject {
             }
         }
         for (const id in installed) {
-            if (!used[id] && !inFolder[id]) {
+            if (!used[id] && !inFolder[id] && !hidden[id]) {
                 rest.push(appEntry(id));
             }
         }
@@ -123,6 +137,12 @@ QtObject {
                 }
             }
         }
+        // keep hidden favourites at their old places, for when they are unpinned
+        savedLayout.forEach((k, i) => {
+            if (hidden[k] && layoutIds.indexOf(k) < 0) {
+                layoutIds.splice(Math.min(i, layoutIds.length), 0, k);
+            }
+        });
         const keptNames = kept.map(f => "folder:" + f.name);
         layoutIds = layoutIds.filter(k => !k.startsWith("folder:") || keptNames.indexOf(k) >= 0);
         effect.writeConfig("AppFolders", F.serialize(kept));
@@ -182,8 +202,8 @@ QtObject {
         if (!f) {
             return;
         }
-        const present = f.ids.filter(x => installed[x] !== undefined && x !== id);
-        const absent = f.ids.filter(x => installed[x] === undefined);
+        const present = f.ids.filter(x => installed[x] !== undefined && !hidden[x] && x !== id);
+        const absent = f.ids.filter(x => (installed[x] === undefined || hidden[x]) && x !== id);
         present.splice(Math.max(0, Math.min(present.length, insertAt)), 0, id);
         f.ids = present.concat(absent);
         save(currentIds(), fs);
