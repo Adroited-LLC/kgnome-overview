@@ -257,12 +257,16 @@ FocusScope {
             event.accepted = true;
         } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
             if (searching) {
-                searchResults.activateFirst();
+                searchResults.activateSelected();
                 event.accepted = true;
             }
-        } else if (searching && (event.key === Qt.Key_Down || event.key === Qt.Key_Tab)) {
-            searchResults.focusResults();
-            event.accepted = true;
+        } else if (searching && (event.key === Qt.Key_Up || event.key === Qt.Key_Down || event.key === Qt.Key_Tab
+                                 || ((event.key === Qt.Key_Left || event.key === Qt.Key_Right)
+                                     && !(event.modifiers & (Qt.ShiftModifier | Qt.ControlModifier))))) {
+            // the selection moves, keyboard focus stays in the search entry
+            if (searchResults.moveSelection(event.key)) {
+                event.accepted = true;
+            }
         } else if (!searching && effect.folderOpen.length === 0 && effect.targetState === effect.stateAppGrid) {
             if (event.key === Qt.Key_Left || event.key === Qt.Key_PageUp) {
                 appGrid.previousPage();
