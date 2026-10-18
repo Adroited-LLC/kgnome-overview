@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Undo dev/make-default.sh: put back the config files saved in
-# backup/<timestamp>/ (newest by default) and make KWin and plasmashell pick
+# backup/<timestamp>/ (the oldest, i.e. the state before the first make-default run, by default) and make KWin and plasmashell pick
 # them up without logging out.
-#   dev/restore-defaults.sh                 restore the newest backup
+#   dev/restore-defaults.sh                 restore the oldest backup
 #   dev/restore-defaults.sh 20261018-002519 restore that backup
 set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")/.."
 QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus)
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
 
-TS=${1:-$(ls -1 backup | sort | tail -n1)}
+TS=${1:-$(ls -1 backup | sort | head -n1)}
 SRC="backup/$TS"
 [[ -d "$SRC" ]] || { echo "no backup $SRC" >&2; exit 1; }
 echo ">> Restoring from $SRC"
