@@ -23,6 +23,8 @@ fi
 
 echo ">> Removing effect package"
 kpackagetool6 --type KWin/Effect --remove "$EFFECT_ID" 2>/dev/null || true
+# the panel launcher (put Kickoff back first: dev/restore-defaults.sh)
+kpackagetool6 --type Plasma/Applet --remove org.kgnome.overview.launcher 2>/dev/null || true
 
 echo ">> Removing QML module"
 for libdir in lib64 lib; do

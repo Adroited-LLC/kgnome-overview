@@ -58,6 +58,14 @@ else
     kpackagetool6 --type KWin/Effect --install "$PKG_STAGE"
 fi
 
+echo ">> Installing the panel launcher plasmoid (org.kgnome.overview.launcher)"
+LAUNCHER="$SRC_DIR/plasmoid/org.kgnome.overview.launcher"
+if kpackagetool6 --type Plasma/Applet --show org.kgnome.overview.launcher >/dev/null 2>&1; then
+    kpackagetool6 --type Plasma/Applet --upgrade "$LAUNCHER" >/dev/null
+else
+    kpackagetool6 --type Plasma/Applet --install "$LAUNCHER" >/dev/null
+fi
+
 # KWin looks for declarative effects in kwin-wayland/effects/ first. Pointing
 # that at the package gives main.qml a URL KWin has not cached yet when the
 # package is first installed into an already-running session.

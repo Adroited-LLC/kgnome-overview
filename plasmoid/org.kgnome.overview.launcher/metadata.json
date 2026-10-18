@@ -1,0 +1,15 @@
+{
+    "KPlugin": {
+        "Authors": [{ "Name": "Matt H" }],
+        "Category": "Application Launchers",
+        "Description": "Opens the GNOME-style app grid of the kgnome-overview KWin effect",
+        "Icon": "view-app-grid-symbolic",
+        "Id": "org.kgnome.overview.launcher",
+        "License": "GPL-2.0-or-later",
+        "Name": "GNOME Overview Launcher",
+        "Version": "1.0"
+    },
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-Provides": ["org.kde.plasma.launchermenu"]
+}
