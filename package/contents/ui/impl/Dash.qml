@@ -59,7 +59,9 @@ Item {
         width: row.width + 2 * dash.bgPaddingH
         height: dash.itemSize + 2 * dash.bgPadding
         radius: Math.round(28 * dash.s)
-        color: L.SYSTEM_OVERLAY_BG_COLOR
+        color: dash.screenView.dashDropHover ? Qt.lighter(L.SYSTEM_OVERLAY_BG_COLOR, 1.35) : L.SYSTEM_OVERLAY_BG_COLOR
+        border.width: dash.screenView.dashDropHover ? Math.round(2 * dash.s) : 0
+        border.color: Kirigami.Theme.highlightColor
 
         Row {
             id: row

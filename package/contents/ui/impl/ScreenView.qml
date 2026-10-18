@@ -108,6 +108,137 @@ FocusScope {
         }
     }
 
+    // --- App icon drag and drop (GNOME's DND for app icons) -----------------------
+    // Sources: the app grid and folder dialog grids (PagedGrid). Targets:
+    // another icon's centre (create folder / add to folder), between icons
+    // (reorder), the dash (favourite), a workspace (launch there).
+    property var iconDrag: null        // {source: PagedGrid, entry, fromFolder}
+    property point iconDragPoint
+    property point iconDragOffset
+    property int iconDragSize: 96
+    property var iconDropTarget: ({type: "none"})
+    property QtObject dropDesktop: null
+    property bool dashDropHover: false
+
+    function pointIn(item, p) {
+        if (!item || !item.visible) {
+            return false;
+        }
+        const q = item.mapFromItem(root, p.x, p.y);
+        return q.x >= 0 && q.y >= 0 && q.x <= item.width && q.y <= item.height;
+    }
+    function iconDragBegin(sourceGrid, entry, pressPoint, p, iconSize) {
+        iconDrag = {source: sourceGrid, entry: entry,
+                    fromFolder: sourceGrid === folderDialog.grid ? folderDialog.folderName : ""};
+        iconDragSize = iconSize;
+        iconDragOffset = Qt.point(0, 0);
+        iconDragMove(p);
+    }
+    function iconDragMove(p) {
+        if (!iconDrag) {
+            return;
+        }
+        iconDragPoint = p;
+        const kind = iconDrag.entry.kind;
+        const fromFolder = iconDrag.fromFolder.length > 0;
+        let target = {type: "none"};
+        if (fromFolder && !folderDialog.dragOut) {
+            if (folderDialog.containsScreenPoint(p)) {
+                const g = folderDialog.grid;
+                target = g.dragHover(g.mapFromItem(root, p.x, p.y), kind);
+                target.grid = g;
+            } else {
+                // dragged out of the folder: close it, continue in the main grid
+                folderDialog.dragOut = true;
+                folderDialog.grid.dragLeave();
+                folderDialog.grid.placeholderSlot = -1;
+            }
+        }
+        if (target.type === "none" && (!fromFolder || folderDialog.dragOut)) {
+            const g = appGrid.paged;
+            if (gridFactor > 0.99 && !searching && pointIn(g, p) && g.mapFromItem(root, p.x, p.y).y <= g.pageHeight) {
+                target = g.dragHover(g.mapFromItem(root, p.x, p.y), kind);
+                target.grid = g;
+            } else {
+                g.dragLeave();
+            }
+        }
+        if (target.type === "none" && kind === "app") {
+            if (pointIn(dash, p)) {
+                target = {type: "dash"};
+            } else {
+                const d = desktopAtPoint(p);
+                if (d) {
+                    target = {type: "desktop", desktop: d};
+                }
+            }
+        }
+        dashDropHover = target.type === "dash";
+        dropDesktop = target.type === "desktop" ? target.desktop : null;
+        iconDropTarget = target;
+    }
+    function iconDragEnd(p) {
+        const drag = iconDrag;
+        const target = iconDropTarget;
+        // read the grid's drop position before resetting the grids
+        const insertAt = target && target.grid ? target.grid.dropInsertAt() : -1;
+        const targetEntry = target && target.type === "folder" ? target.grid.entries[target.index] : null;
+        const sourceIndex = drag ? drag.source.dragEntryIndex : -1;
+        const wasOut = folderDialog.dragOut;
+        iconDrag = null;
+        iconDropTarget = {type: "none"};
+        dashDropHover = false;
+        dropDesktop = null;
+        appGrid.paged.dragEnd();
+        folderDialog.grid.dragEnd();
+        folderDialog.dragOut = false;
+        if (!drag || !p) {
+            return;
+        }
+        const e = drag.entry;
+        const model = effect.appLayout;
+        const fromFolder = drag.fromFolder;
+        if (wasOut) {
+            effect.folderOpen = "";
+        }
+        if (!model) {
+            return;
+        }
+        switch (target.type) {
+        case "folder":
+            if (targetEntry.kind === "folder") {
+                model.addToFolder(e.id, targetEntry.name);
+            } else {
+                const name = effect.sharedCategory([e.id, targetEntry.id]) || "Unnamed Folder";
+                model.createFolder(e.id, targetEntry.id, name);
+            }
+            break;
+        case "reorder":
+            if (target.grid === appGrid.paged) {
+                if (fromFolder || insertAt !== sourceIndex) {
+                    model.moveTo(e.id, insertAt);
+                }
+            } else if (target.grid === folderDialog.grid && fromFolder) {
+                if (insertAt !== sourceIndex) {
+                    model.moveInFolder(fromFolder, e.id, insertAt);
+                }
+            }
+            break;
+        case "dash":
+            effect.addFavorite(e.id, -1);
+            break;
+        case "desktop":
+            effect.launchOnDesktop(e.id, target.desktop);
+            break;
+        default:
+            // dropped outside any target after leaving the folder: take it out
+            if (fromFolder && wasOut) {
+                model.moveTo(e.id, appGrid.entries.length);
+            }
+            break;
+        }
+    }
+
     function focusSearch() {
         searchEntry.focusInput();
     }
@@ -369,7 +500,38 @@ FocusScope {
         z: 80
         anchors.fill: parent
         screenView: root
-        grid: appGrid
+        appGrid: appGrid
+    }
+
+    // dragged app icon / folder
+    Item {
+        id: iconDragProxy
+        z: 95
+        visible: root.iconDrag !== null
+        width: root.iconDragSize
+        height: root.iconDragSize
+        x: root.iconDragPoint.x - width / 2
+        y: root.iconDragPoint.y - height / 2
+        readonly property var entry: root.iconDrag ? root.iconDrag.entry : null
+        AsyncIcon {
+            anchors.fill: parent
+            visible: parent.entry !== null && parent.entry.kind === "app"
+            readonly property var app: visible && effect.backend ? effect.backend.appAt("apps", parent.entry.index) : null
+            size: root.iconDragSize
+            iconPath: app ? app.iconPath : ""
+            fallback: app ? app.icon : ""
+        }
+        FolderIcon {
+            visible: parent.entry !== null && parent.entry.kind === "folder"
+            anchors.centerIn: parent
+            width: root.iconDragSize + Math.round(24 * root.s)
+            height: width
+            iconSize: root.iconDragSize
+            s: root.s
+            showLabel: false
+            backend: effect.backend
+            folder: visible ? parent.entry : null
+        }
     }
 
     // Shown only if no backend could be created at all.

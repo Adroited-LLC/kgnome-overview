@@ -15,6 +15,7 @@ Item {
     property real radius: Math.round(24 * s)
     property bool hovered: false
     property bool pressed: false
+    property bool showLabel: true
     readonly property int padding: Math.round(12 * s)
     readonly property int subSize: Math.floor(L.FOLDER_SUBICON_FRACTION * iconSize)
 
@@ -45,6 +46,7 @@ Item {
     }
 
     Text {
+        visible: tile.showLabel
         anchors.top: parent.top
         anchors.topMargin: tile.padding + tile.iconSize + Math.round(6 * tile.s)
         anchors.horizontalCenter: parent.horizontalCenter

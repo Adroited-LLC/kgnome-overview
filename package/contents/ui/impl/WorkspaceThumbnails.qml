@@ -115,7 +115,7 @@ Item {
                     radius: Math.round(8 * box.screenView.s)
                     color: "transparent"
                     border.width: Math.round(3 * box.screenView.s)
-                    border.color: thumb.current ? Kirigami.Theme.highlightColor
+                    border.color: thumb.current || box.screenView.dropDesktop === thumb.desktop ? Kirigami.Theme.highlightColor
                                                 : Qt.rgba(1, 1, 1, area.containsMouse ? 0.3 : 0)
                     Behavior on border.color { ColorAnimation { duration: 150 } }
                 }

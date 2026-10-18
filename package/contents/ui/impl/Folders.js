@@ -35,7 +35,8 @@ function normalizeId(id) {
     return id;
 }
 
-// -> [{name, ids: {id: true}}]
+// -> [{name, ids: [id, ...]}] (ordered). An AppFolders list without any
+// "Name=" entry (e.g. ["none"]) means "no folders", not "defaults".
 function parse(specs) {
     var list = (specs && specs.length > 0) ? specs : DEFAULT_FOLDERS;
     var out = [];
@@ -44,15 +45,42 @@ function parse(specs) {
         if (eq <= 0) {
             continue;
         }
-        var ids = {};
+        var ids = [];
         var parts = list[i].substring(eq + 1).split(";");
         for (var j = 0; j < parts.length; ++j) {
             var id = normalizeId(parts[j].trim());
-            if (id.length > 0) {
-                ids[id] = true;
+            if (id.length > 0 && ids.indexOf(id) < 0) {
+                ids.push(id);
             }
         }
         out.push({name: list[i].substring(0, eq).trim(), ids: ids});
     }
     return out;
+}
+
+function serialize(folders) {
+    var out = [];
+    for (var i = 0; i < folders.length; ++i) {
+        out.push(folders[i].name + "=" + folders[i].ids.join(";"));
+    }
+    return out.length > 0 ? out : ["none"];
+}
+
+function uniqueName(folders, name, ignore) {
+    var taken = function (n) {
+        for (var i = 0; i < folders.length; ++i) {
+            if (folders[i].name === n && folders[i].name !== ignore) {
+                return true;
+            }
+        }
+        return false;
+    };
+    if (!taken(name)) {
+        return name;
+    }
+    for (var k = 2; ; ++k) {
+        if (!taken(name + " " + k)) {
+            return name + " " + k;
+        }
+    }
 }

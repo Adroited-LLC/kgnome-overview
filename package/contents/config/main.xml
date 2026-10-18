@@ -16,6 +16,22 @@
             <label>Multiplier for app grid / dash icon sizes (1.0 = GNOME sizes).</label>
             <default>1.0</default>
         </entry>
+        <entry name="IconSize" type="Int">
+            <label>App grid icon size in px (0 = GNOME's automatic 96/64/48... sizes). Steps down if the grid does not fit.</label>
+            <default>112</default>
+        </entry>
+        <entry name="Columns" type="Int">
+            <label>App grid columns (0 = GNOME's automatic 8x3/6x4/4x6/3x8 modes).</label>
+            <default>10</default>
+        </entry>
+        <entry name="Rows" type="Int">
+            <label>App grid rows (0 = automatic, from the screen shape).</label>
+            <default>0</default>
+        </entry>
+        <entry name="AppLayout" type="StringList">
+            <label>Saved app grid order (desktop ids, folders as folder:Name). Written by the overview.</label>
+            <default></default>
+        </entry>
         <entry name="TopRightCorner" type="Bool">
             <label>Toggle the overview from the top-right screen corner.</label>
             <default>false</default>

@@ -79,6 +79,17 @@ Item {
         }
     }
 
+    // drop target highlight while an app icon is dragged over this workspace
+    Rectangle {
+        anchors.fill: parent
+        z: 10
+        radius: background.radius
+        color: "transparent"
+        border.width: ws.px(3 * ws.s)
+        border.color: Kirigami.Theme.highlightColor
+        visible: ws.screenView.dropDesktop === ws.desktop
+    }
+
     // Clicking the workspace (not a window): GNOME Workspace click action –
     // the active workspace leaves the overview, another one is activated.
     MouseArea {

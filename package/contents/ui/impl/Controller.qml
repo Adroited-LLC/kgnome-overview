@@ -32,7 +32,66 @@ QtObject {
     readonly property bool blurBackground: cfg ? cfg.BlurBackground !== false : true
     readonly property var favoriteIds: (cfg && cfg.FavoriteApps) ? cfg.FavoriteApps.filter(s => s.length > 0) : []
     readonly property int gestureFingers: (cfg && cfg.GestureFingers !== undefined) ? cfg.GestureFingers : 3
-    readonly property var folderSpecs: (cfg && cfg.AppFolders) ? cfg.AppFolders.filter(s => s.length > 0) : []
+    // App grid size: IconSize px (0 = GNOME's automatic 96..16), Columns
+    // (0 = GNOME's 8x3/6x4/4x6/3x8 modes), Rows (0 = automatic)
+    readonly property int gridIconSize: (cfg && cfg.IconSize !== undefined) ? cfg.IconSize : 112
+    readonly property int gridColumns: (cfg && cfg.Columns !== undefined) ? cfg.Columns : 10
+    readonly property int gridRows: (cfg && cfg.Rows !== undefined) ? cfg.Rows : 0
+
+    // Persist a setting (KConfigPropertyMap autosaves to kwinrc).
+    function writeConfig(key, value) {
+        if (cfg) {
+            cfg[key] = value;
+            cfg.writeConfig();
+        }
+    }
+
+    // Grid arrangement and folders (AppLayoutModel.qml)
+    property QtObject appLayout: null
+    property QtObject categories: null
+    function ensureCategories() {
+        if (!categories) {
+            const c = Qt.createComponent(Qt.resolvedUrl("Categories.qml"));
+            categories = c.status === Component.Ready ? c.createObject(effect) : null;
+            if (!categories) {
+                console.info("kgnome-overview: categories unavailable:", c.errorString());
+            }
+        }
+    }
+    function sharedCategory(ids) {
+        ensureCategories();
+        try {
+            return categories ? categories.sharedCategory(ids) : "";
+        } catch (e) {
+            return "";
+        }
+    }
+
+    // GNOME: dropping an app on the dash makes it a favourite. The Plasma
+    // launcher favourites are copied into FavoriteApps on the first change.
+    function addFavorite(storageId, position) {
+        let ids = favoriteIds.slice();
+        if (ids.length === 0 && backend) {
+            for (let i = 0; i < backend.count("favorites"); ++i) {
+                const a = backend.appAt("favorites", i);
+                if (a && a.storageId) {
+                    ids.push(a.storageId);
+                }
+            }
+        }
+        const id = storageId.endsWith(".desktop") ? storageId : storageId + ".desktop";
+        ids = ids.filter(x => x !== id);
+        ids.splice(position >= 0 ? Math.min(position, ids.length) : ids.length, 0, id);
+        writeConfig("FavoriteApps", ids);
+    }
+    function launchOnDesktop(storageId, desktop) {
+        if (desktop && KWinComponents.Workspace.currentDesktop !== desktop) {
+            KWinComponents.Workspace.currentDesktop = desktop;
+        }
+        if (backend && backend.launchId(storageId.endsWith(".desktop") ? storageId : storageId + ".desktop")) {
+            hide();
+        }
+    }
 
     // --- Workspaces (GNOME's _scrollAdjustment) -----------------------------
     readonly property var desktops: KWinComponents.Workspace.desktops
@@ -349,5 +408,12 @@ QtObject {
         console.info("kgnome-overview: controller loaded from", Qt.resolvedUrl("."));
         createBackend();
         rebuildRunning();
+        const lc = Qt.createComponent(Qt.resolvedUrl("AppLayoutModel.qml"));
+        appLayout = lc.createObject(effect, {effect: effect});
+        // Kicker's category models populate asynchronously; create them early
+        Qt.callLater(ensureCategories);
+        if (!appLayout) {
+            console.warn("kgnome-overview: AppLayoutModel:", lc.errorString());
+        }
     }
 }

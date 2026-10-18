@@ -145,10 +145,10 @@ function bestGridMode(width, height) {
 
 // IconGridLayout._findBestIconSize + _calculateSpacing (FILL alignment).
 // tileFor(iconSize) returns the square tile size for an icon size.
-function gridGeometry(pageWidth, pageHeight, padding, mode, spacing, maxSpacing, iconScale, tileFor) {
+function gridGeometry(pageWidth, pageHeight, padding, mode, spacing, maxSpacing, iconScale, tileFor, fixedIcon) {
     var cols = mode.columns, rows = mode.rows;
-    var iconSize = ICON_SIZES[ICON_SIZES.length - 1];
-    for (var i = 0; i < ICON_SIZES.length; ++i) {
+    var iconSize = fixedIcon || ICON_SIZES[ICON_SIZES.length - 1];
+    for (var i = 0; !fixedIcon && i < ICON_SIZES.length; ++i) {
         var size = Math.round(ICON_SIZES[i] * iconScale);
         var tile = tileFor(size);
         var emptyH = pageWidth - tile * cols - spacing * (cols - 1) - 2 * padding.h;
@@ -220,4 +220,34 @@ function fitAllRect(box, aspect, index, n, s) {
 function scaleRect(r, f) {
     var w = r.width * f, h = r.height * f;
     return rect(r.x + (r.width - w) / 2, r.y + (r.height - h) / 2, w, h);
+}
+
+// Grid with a configured column count (kgnome-overview setting) instead of
+// GNOME's four fixed modes. rows <= 0: pick the row count whose shape is
+// closest to the available area (the same idea as _findBestModeForSize),
+// capped to what fits. The icon size starts at preferredIcon and steps down
+// through GNOME's sizes until the grid fits; spacing stays GNOME's FILL logic.
+function customGridGeometry(pageWidth, pageHeight, padding, columns, rows, preferredIcon, spacing, maxSpacing, tileFor) {
+    var availW = pageWidth - 2 * padding.h;
+    var availH = pageHeight - 2 * padding.v;
+    var sizes = [preferredIcon];
+    for (var i = 0; i < ICON_SIZES.length; ++i) {
+        if (ICON_SIZES[i] < preferredIcon) {
+            sizes.push(ICON_SIZES[i]);
+        }
+    }
+    var chosen = null;
+    for (var j = 0; j < sizes.length; ++j) {
+        var tile = tileFor(sizes[j]);
+        var maxRows = Math.max(1, Math.floor((availH + spacing) / (tile + spacing)));
+        var r = rows > 0 ? rows : Math.max(1, Math.min(maxRows, Math.round(columns * availH / Math.max(1, availW))));
+        var fitsW = tile * columns + spacing * (columns - 1) <= availW;
+        var fitsH = tile * r + spacing * (r - 1) <= availH;
+        chosen = {rows: r, columns: columns, iconSize: sizes[j]};
+        if (fitsW && fitsH) {
+            break;
+        }
+    }
+    return gridGeometry(pageWidth, pageHeight, padding, {rows: chosen.rows, columns: chosen.columns},
+                        spacing, maxSpacing, 1, function (size) { return tileFor(size); }, chosen.iconSize);
 }
