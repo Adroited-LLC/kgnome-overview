@@ -2,8 +2,13 @@
 # SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 # SPDX-License-Identifier: GPL-2.0-or-later
 # User-local install of kgnome-overview (no root needed).
-#   ./install.sh            build + install module, effect package and env script, (re)load effect
-#   ./install.sh --no-load  same, but don't touch the running KWin
+#   ./install.sh                  build + install module, effect, plasmoids and env
+#                                 script, (re)load the effect; asks whether to make
+#                                 it the default (Meta key, panel) when run in a terminal
+#   ./install.sh --make-default   same, and make it the default without asking
+#   ./install.sh --no-make-default  never ask
+#   ./install.sh --no-load        install only: don't touch KWin, the panel or defaults
+# Undo the defaults with scripts/restore-defaults.sh, remove with ./uninstall.sh.
 set -euo pipefail
 
 cd "$(dirname "$(readlink -f "$0")")"
@@ -13,14 +18,54 @@ BUILD_DIR="${BUILD_DIR:-$SRC_DIR/build}"
 EFFECT_ID=kgnomeoverview
 ENV_DIR="$HOME/.config/plasma-workspace/env"
 LOAD=1
-[[ "${1:-}" == "--no-load" ]] && LOAD=0
+MAKE_DEFAULT=ask
+for arg in "$@"; do
+    case "$arg" in
+        --no-load) LOAD=0 ;;
+        --make-default) MAKE_DEFAULT=yes ;;
+        --no-make-default) MAKE_DEFAULT=no ;;
+        -h|--help) sed -n '4,11p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "unknown option: $arg (see --help)" >&2; exit 2 ;;
+    esac
+done
+[[ $LOAD == 0 && $MAKE_DEFAULT == yes ]] && { echo "--make-default needs the running session; drop --no-load" >&2; exit 2; }
 
-QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus || true)
+QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus || ls /usr/lib*/qt6/bin/qdbus /usr/lib/*/qt6/bin/qdbus 2>/dev/null | head -n1 || true)
+
+# --- dependencies -----------------------------------------------------------
+deps_hint() {
+    local id like
+    id=$(. /etc/os-release 2>/dev/null; echo "${ID:-} ${ID_LIKE:-}")
+    echo "Install the build dependencies, then run ./install.sh again:" >&2
+    case " $id " in
+        *" fedora "*|*" rhel "*)
+            echo "  sudo dnf install cmake gcc-c++ extra-cmake-modules qt6-qtbase-devel qt6-qtdeclarative-devel kf6-kservice-devel kf6-kconfig-devel kf6-kcoreaddons-devel" >&2 ;;
+        *" arch "*)
+            echo "  sudo pacman -S --needed base-devel cmake extra-cmake-modules qt6-base qt6-declarative kservice kconfig kcoreaddons" >&2 ;;
+        *" opensuse"*|*" suse "*)
+            echo "  sudo zypper install cmake gcc-c++ kf6-extra-cmake-modules qt6-base-devel qt6-declarative-devel kf6-kservice-devel kf6-kconfig-devel kf6-kcoreaddons-devel" >&2 ;;
+        *" debian "*|*" ubuntu "*)
+            echo "  sudo apt install cmake g++ extra-cmake-modules qt6-base-dev qt6-declarative-dev libkf6service-dev libkf6config-dev libkf6coreaddons-dev" >&2 ;;
+        *)  echo "  cmake, a C++20 compiler, extra-cmake-modules, Qt 6 Base/Declarative and KF6 Service/Config/CoreAddons development packages" >&2 ;;
+    esac
+    echo "  (see README.md, 'Requirements')" >&2
+}
+missing=()
+for tool in cmake kpackagetool6 kwriteconfig6 kreadconfig6; do
+    command -v "$tool" >/dev/null || missing+=("$tool")
+done
+command -v c++ >/dev/null || command -v g++ >/dev/null || command -v clang++ >/dev/null || missing+=("C++ compiler")
+[[ $LOAD == 1 && -z "$QDBUS" ]] && missing+=("qdbus (Qt 6 tools)")
+if (( ${#missing[@]} )); then
+    echo "Missing: ${missing[*]}" >&2
+    deps_hint
+    exit 1
+fi
 
 echo ">> Configuring and building"
 cmake -S "$SRC_DIR" -B "$BUILD_DIR" -DCMAKE_INSTALL_PREFIX="$PREFIX" \
       -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=OFF >/dev/null 2>"$BUILD_DIR.cmake.log" \
-    || { cat "$BUILD_DIR.cmake.log" >&2; exit 1; }
+    || { cat "$BUILD_DIR.cmake.log" >&2; echo >&2; deps_hint; exit 1; }
 cmake --build "$BUILD_DIR" -j"$(nproc)"
 
 echo ">> Installing QML module"
@@ -131,10 +176,29 @@ if [[ $LOAD == 1 ]]; then
     "$SRC_DIR/scripts/system-menu.sh" ensure || true
 fi
 
+# Making it the default changes the Meta key, the hot corner and the panel
+# launcher: opt-in only. Backups go to backup/<timestamp>/.
+if [[ $LOAD == 1 && $MAKE_DEFAULT == ask && -t 0 && -t 1 ]]; then
+    echo
+    echo "Make the GNOME-style overview the default? This binds the Meta key, sets the"
+    echo "top-left hot corner and replaces the Application Launcher on the panel with"
+    echo "Show Apps + System Menu (KWin and panel config are backed up first; undo with"
+    echo "scripts/restore-defaults.sh)."
+    read -r -p "Make it the default now? [y/N] " answer
+    [[ $answer == [yY]* ]] && MAKE_DEFAULT=yes
+fi
+if [[ $LOAD == 1 && $MAKE_DEFAULT == yes ]]; then
+    "$SRC_DIR/scripts/make-default.sh"
+fi
+
 cat <<MSG
 Done.
-  Toggle overview:  Meta+O        App grid: Meta+Shift+O
-  Note: KWin keeps an already-loaded C++ plugin in memory; changes to the
-  C++ module only take effect after the next log out/in. QML changes apply
-  after this script reloads the effect.
+  Overview:  Meta+O      App grid: Meta+Shift+O
+  Meta alone, Meta+W, the top-left hot corner and Show Apps on the panel
+  once it is the default (./install.sh --make-default).
+  Undo the defaults: scripts/restore-defaults.sh   Remove: ./uninstall.sh
+  First install, or an update of the C++ module: log out and back in once
+  (KWin keeps a loaded C++ plugin in memory). QML changes apply right away;
+  an updated panel plasmoid shows after a re-login or
+  'systemctl --user restart plasma-plasmashell'.
 MSG
