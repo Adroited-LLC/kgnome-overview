@@ -20,6 +20,14 @@
             <label>Toggle the overview from the top-right screen corner.</label>
             <default>false</default>
         </entry>
+        <entry name="GestureFingers" type="Int">
+            <label>Fingers for the touchpad swipe gestures (0 = off). KWin's own overview uses 4.</label>
+            <default>3</default>
+        </entry>
+        <entry name="AppFolders" type="StringList">
+            <label>App folders as "Name=id1;id2;..." (desktop file ids). Empty: built-in Utilities and System folders.</label>
+            <default></default>
+        </entry>
         <entry name="ImplDir" type="String">
             <label>Implementation directory under contents/ui (written by install.sh)</label>
             <default>impl</default>

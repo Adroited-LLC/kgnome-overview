@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// Adwaita-ish search pill. Always holds keyboard focus, so typing anywhere in
-// the overview starts a search (like GNOME).
+// GNOME's .search-entry (gnome-shell-sass/widgets/_search-entry.scss):
+// width 24em, circular, padding 9px, $system_bg_color, 16px icon with
+// 0 4px padding, accent focus ring. Always holds keyboard focus, so typing
+// anywhere in the overview starts a search (like GNOME).
 import QtQuick
 import org.kde.kirigami as Kirigami
+import "Layout.js" as L
 
 FocusScope {
     id: entry
@@ -12,23 +15,29 @@ FocusScope {
     readonly property real s: screenView.s
     readonly property alias text: input.text
 
-    width: Math.round(320 * s)
-    height: Math.round(36 * s)
+    // 24em at GNOME's 11pt base font
+    width: Math.round(24 * screenView.fontPx)
+    height: Math.round(input.font.pixelSize * 1.3 + 2 * 9 * s)
 
     Rectangle {
         id: pill
         anchors.fill: parent
         radius: height / 2
-        color: input.activeFocus && entry.effect.searchText.length > 0 ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(1, 1, 1, 0.1)
-        border.width: input.activeFocus ? Math.round(2 * entry.s) : 0
-        border.color: input.activeFocus ? Qt.rgba(0.47, 0.68, 0.93, 0.8) : "transparent"   // Adwaita focus ring
+        color: Qt.lighter(L.SYSTEM_BG_COLOR, hoverArea.hovered ? 1.15 : 1.0)
+        // the focus ring only shows once there is something typed, like GNOME's
+        // overview where the entry always has key focus
+        border.width: entry.effect.searchText.length > 0 ? Math.round(2 * entry.s) : 0
+        border.color: Kirigami.Theme.highlightColor
+        HoverHandler {
+            id: hoverArea
+        }
         Behavior on color { ColorAnimation { duration: 150 } }
     }
 
     Kirigami.Icon {
         id: searchIcon
         anchors.left: parent.left
-        anchors.leftMargin: Math.round(12 * entry.s)
+        anchors.leftMargin: Math.round((9 + 4) * entry.s)
         anchors.verticalCenter: parent.verticalCenter
         width: Math.round(16 * entry.s)
         height: width
@@ -48,7 +57,7 @@ FocusScope {
         color: "white"
         selectionColor: Qt.rgba(0.21, 0.52, 0.89, 1)
         selectedTextColor: "white"
-        font.pixelSize: Math.round(15 * entry.s)
+        font.pixelSize: entry.screenView.fontPx
         clip: true
         horizontalAlignment: TextInput.AlignLeft
         onTextEdited: entry.effect.searchText = text
@@ -59,7 +68,7 @@ FocusScope {
             anchors.verticalCenter: parent.verticalCenter
             visible: input.text.length === 0
             text: "Type to search"
-            color: Qt.rgba(1, 1, 1, 0.5)
+            color: Qt.rgba(0.98, 0.98, 0.98, 0.7)
             font: input.font
         }
     }

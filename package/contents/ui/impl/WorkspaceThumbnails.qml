@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // GNOME's ThumbnailsBox: a centred row of workspace previews under the search
 // entry, at most MAX_THUMBNAIL_SCALE (5%) of the screen height.
+// _workspace-thumbnails.scss: .workspace-thumbnails spacing 6px, padding 6px;
+// .workspace-thumbnail border-radius 4px; .workspace-thumbnail-indicator
+// 3px accent border, radius 8px.
 import QtQuick
 import Qt5Compat.GraphicalEffects as GE
 import org.kde.kirigami as Kirigami
@@ -13,14 +16,16 @@ Item {
     required property QtObject windowModel
 
     readonly property QtObject targetScreen: screenView.targetScreen
-    readonly property real thumbHeight: height
-    readonly property real thumbWidth: Math.round(height * targetScreen.geometry.width / targetScreen.geometry.height)
-    readonly property real thumbSpacing: Math.round(12 * screenView.s)
-    readonly property real thumbScale: height / targetScreen.geometry.height
+    readonly property real boxPadding: Math.round(6 * screenView.s)
+    readonly property real thumbHeight: Math.max(1, height - 2 * boxPadding)
+    readonly property real thumbWidth: Math.round(thumbHeight * targetScreen.geometry.width / targetScreen.geometry.height)
+    readonly property real thumbSpacing: Math.round(6 * screenView.s)
+    readonly property real thumbScale: thumbHeight / targetScreen.geometry.height
 
     Row {
         anchors.horizontalCenter: parent.horizontalCenter
-        height: parent.height
+        y: box.boxPadding
+        height: box.thumbHeight
         spacing: box.thumbSpacing
 
         Repeater {
@@ -43,7 +48,7 @@ Item {
                         maskSource: Rectangle {
                             width: preview.width
                             height: preview.height
-                            radius: Math.round(6 * box.screenView.s)
+                            radius: Math.round(4 * box.screenView.s)
                         }
                     }
 
@@ -86,14 +91,15 @@ Item {
                     }
                 }
 
-                // Active workspace indicator / hover outline
+                // Active workspace indicator (slides between thumbnails in GNOME)
                 Rectangle {
                     anchors.fill: parent
                     anchors.margins: -Math.round(3 * box.screenView.s)
                     radius: Math.round(8 * box.screenView.s)
                     color: "transparent"
                     border.width: Math.round(3 * box.screenView.s)
-                    border.color: thumb.current ? "white" : Qt.rgba(1, 1, 1, area.containsMouse ? 0.45 : 0.15)
+                    border.color: thumb.current ? Kirigami.Theme.highlightColor
+                                                : Qt.rgba(1, 1, 1, area.containsMouse ? 0.3 : 0)
                     Behavior on border.color { ColorAnimation { duration: 150 } }
                 }
 

@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // GNOME's Dash: favourites plus a "Show Apps" button at the bottom, at most
 // DASH_MAX_HEIGHT_RATIO of the screen height; icon size is the largest of the
-// dash sizes for which all items fit.
+// dash sizes (64 down to 16) for which all items fit.
+// _dash.scss: .dash-background $system_overlay_bg_color, radius 28px
+// ($modal_radius + 12), padding 12px top/bottom and 10px left/right,
+// margin-bottom 12px; items margin 0 2px with 6px tile padding and 16px
+// radius; separator 1px with 4px margins; running dot in the bottom padding.
 import QtQuick
 import org.kde.kirigami as Kirigami
 import org.kde.kwin as KWinComponents
@@ -20,15 +24,17 @@ Item {
     readonly property real s: screenView.s
     readonly property int favCount: backend ? (backend.revision, backend.count("favorites")) : 0
     readonly property int itemPadding: Math.round(6 * s)
-    readonly property int bgPadding: Math.round(6 * s)
-    readonly property int bottomMargin: Math.round(screenView.spacing / 2)
-    readonly property int separatorWidth: favCount > 0 ? Math.round(13 * s) : 0
+    readonly property int itemMargin: Math.round(2 * s)
+    readonly property int bgPadding: Math.round(12 * s)
+    readonly property int bgPaddingH: Math.round(10 * s)
+    readonly property int bottomMargin: Math.round(12 * s)
+    readonly property int separatorWidth: favCount > 0 ? Math.round((1 + 2 * 4) * s) : 0
     readonly property int iconSize: {
         const n = favCount + 1;
         for (const base of L.DASH_ICON_SIZES) {
             const size = Math.round(base * effect.iconScale);
             const item = size + 2 * itemPadding;
-            const w = n * item + separatorWidth + 2 * bgPadding;
+            const w = n * (item + 2 * itemMargin) + separatorWidth + 2 * bgPaddingH;
             const h = item + 2 * bgPadding + bottomMargin;
             if (w <= maxWidth && h <= maxHeight) {
                 return size;
@@ -38,35 +44,8 @@ Item {
     }
     readonly property int itemSize: iconSize + 2 * itemPadding
 
-    // Running apps, matched by desktop file name (for the indicator dots).
-    // Workspace.stackingOrder has no change signal, so rebuild on window events.
-    property var runningWindows: ({})
-    function rebuildRunning() {
-        const map = {};
-        const order = KWinComponents.Workspace.stackingOrder;
-        for (let i = 0; i < order.length; ++i) {
-            const w = order[i];
-            if (!w || !w.normalWindow || w.skipTaskbar || !w.desktopFileName) {
-                continue;
-            }
-            (map[w.desktopFileName] = map[w.desktopFileName] || []).push(w);
-        }
-        runningWindows = map;
-    }
-    Connections {
-        target: KWinComponents.Workspace
-        function onWindowAdded() { Qt.callLater(dash.rebuildRunning) }
-        function onWindowRemoved() { Qt.callLater(dash.rebuildRunning) }
-        function onWindowActivated() { Qt.callLater(dash.rebuildRunning) }
-    }
-    Component.onCompleted: rebuildRunning()
-
     function windowsFor(storageId) {
-        if (!storageId) {
-            return [];
-        }
-        const id = storageId.endsWith(".desktop") ? storageId.slice(0, -8) : storageId;
-        return runningWindows[id] || [];
+        return effect.windowsFor(storageId);
     }
 
     implicitWidth: background.width
@@ -77,24 +56,30 @@ Item {
     Rectangle {
         id: background
         anchors.horizontalCenter: parent.horizontalCenter
-        width: row.width + 2 * dash.bgPadding
+        width: row.width + 2 * dash.bgPaddingH
         height: dash.itemSize + 2 * dash.bgPadding
-        radius: Math.round(dash.itemSize * 0.3)
-        color: Qt.rgba(0.2, 0.2, 0.2, 0.7)
-        border.color: Qt.rgba(1, 1, 1, 0.06)
+        radius: Math.round(28 * dash.s)
+        color: L.SYSTEM_OVERLAY_BG_COLOR
 
         Row {
             id: row
             anchors.centerIn: parent
+            spacing: 2 * dash.itemMargin
+            leftPadding: dash.itemMargin
+            rightPadding: dash.itemMargin
 
             Repeater {
                 model: dash.favCount
                 delegate: AppIcon {
                     required property int index
-                    readonly property var wins: app ? dash.windowsFor(app.storageId) : []
+                    readonly property var wins: app ? (dash.effect.runningWindows, dash.windowsFor(app.storageId)) : []
                     width: dash.itemSize
                     height: dash.itemSize
                     s: dash.s
+                    tilePadding: dash.itemPadding
+                    radius: Math.round(16 * dash.s)
+                    fontPx: dash.screenView.fontPx
+                    dotBottomMargin: -Math.round(dash.bgPadding / 2 + 2.5 * dash.s)
                     showLabel: false
                     iconSize: dash.iconSize
                     app: dash.backend ? (dash.backend.revision, dash.backend.appAt("favorites", index)) : null
@@ -117,8 +102,8 @@ Item {
                 Rectangle {
                     anchors.centerIn: parent
                     width: Math.max(1, Math.round(1 * dash.s))
-                    height: Math.round(dash.itemSize * 0.6)
-                    color: Qt.rgba(1, 1, 1, 0.25)
+                    height: dash.iconSize
+                    color: Qt.rgba(1, 1, 1, 0.1)   // $system_borders_color
                 }
             }
 
@@ -129,13 +114,13 @@ Item {
                 readonly property bool checked: dash.effect.targetState === dash.effect.stateAppGrid
                 Rectangle {
                     anchors.fill: parent
-                    anchors.margins: Math.round(2 * dash.s)
-                    radius: Math.round(14 * dash.s)
-                    color: Qt.rgba(1, 1, 1, showAppsArea.pressed ? 0.25 : parent.checked ? 0.18 : showAppsArea.containsMouse ? 0.12 : 0)
+                    anchors.margins: 0
+                    radius: Math.round(16 * dash.s)
+                    color: Qt.rgba(1, 1, 1, showAppsArea.pressed ? 0.15 : parent.checked ? 0.12 : showAppsArea.containsMouse ? 0.1 : 0)
                 }
                 Kirigami.Icon {
                     anchors.centerIn: parent
-                    width: Math.round(dash.iconSize * 0.75)
+                    width: Math.round(dash.iconSize * 0.6)
                     height: width
                     source: "view-app-grid-symbolic"
                     fallback: "view-grid-symbolic"

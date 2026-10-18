@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// GNOME-style app tile: icon with a label underneath, rounded hover highlight.
+// GNOME-style app tile (_app-grid.scss .overview-tile): icon with the label
+// underneath (6px spacing), 12px padding, rounded hover highlight.
+// With interactive: false the tile has no MouseArea of its own; the parent
+// (AppGrid) does hit testing and sets hovered/pressed, so drags can start on
+// top of icons.
 import QtQuick
+import "Layout.js" as L
 
 Item {
     id: tile
@@ -8,13 +13,21 @@ Item {
     property var app: null          // {name, iconName, iconPath, icon, storageId}
     property int iconSize: 96
     property real s: 1
+    property int fontPx: Math.round(15 * s)
     property bool showLabel: true
     property bool selected: false
     property bool running: false
     property string tooltip: ""
-    readonly property alias hovered: area.containsMouse
-    readonly property int padding: Math.round(12 * s)
-    readonly property int labelHeight: showLabel ? Math.round(label.font.pixelSize * 1.4) : 0
+    property bool interactive: true
+    property bool hoveredExternal: false
+    property bool pressedExternal: false
+    property real radius: Math.round(24 * s)
+    property real dotBottomMargin: Math.round(1 * s)
+    property int tilePadding: Math.round(12 * s)
+    readonly property bool hovered: interactive ? area.containsMouse : hoveredExternal
+    readonly property bool pressed: interactive ? area.pressed : pressedExternal
+    readonly property int padding: tilePadding
+    readonly property int labelHeight: showLabel ? Math.round(fontPx * 1.4) : 0
 
     signal activated(int button, int modifiers)
 
@@ -23,8 +36,8 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: Math.round(16 * tile.s)
-        color: Qt.rgba(1, 1, 1, area.pressed ? 0.2 : (tile.selected || area.containsMouse) ? 0.12 : 0)
+        radius: tile.radius
+        color: Qt.rgba(1, 1, 1, tile.pressed ? 0.15 : (tile.selected || tile.hovered) ? 0.1 : 0)
         Behavior on color { ColorAnimation { duration: 100 } }
     }
 
@@ -35,8 +48,6 @@ Item {
         size: tile.iconSize
         iconPath: tile.app ? tile.app.iconPath : ""
         fallback: tile.app ? tile.app.icon : ""
-        scale: area.pressed ? 0.94 : 1
-        Behavior on scale { NumberAnimation { duration: 100 } }
     }
 
     Text {
@@ -48,40 +59,38 @@ Item {
         width: parent.width - Math.round(4 * tile.s)
         horizontalAlignment: Text.AlignHCenter
         elide: Text.ElideRight
-        color: "white"
-        font.pixelSize: Math.round(13 * tile.s)
+        color: L.SYSTEM_FG_COLOR
+        font.pixelSize: tile.fontPx
         text: tile.app ? tile.app.name : ""
-        style: Text.Raised
-        styleColor: Qt.rgba(0, 0, 0, 0.4)
     }
 
-    // running indicator (dash)
+    // .app-grid-running-dot: 5px
     Rectangle {
         visible: tile.running
         width: Math.round(5 * tile.s)
         height: width
         radius: width / 2
-        color: "white"
+        color: L.SYSTEM_FG_COLOR
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: Math.round(3 * tile.s)
+        anchors.bottomMargin: tile.dotBottomMargin
     }
 
-    // name tooltip for label-less tiles (dash)
+    // name tooltip for label-less tiles (dash): .dash-label
     Rectangle {
-        visible: !tile.showLabel && area.containsMouse && tile.app !== null
+        visible: !tile.showLabel && tile.hovered && tile.app !== null
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.top
-        anchors.bottomMargin: Math.round(8 * tile.s)
-        width: tipLabel.implicitWidth + Math.round(20 * tile.s)
-        height: tipLabel.implicitHeight + Math.round(10 * tile.s)
+        anchors.bottomMargin: Math.round(14 * tile.s)
+        width: tipLabel.implicitWidth + Math.round(24 * tile.s)
+        height: tipLabel.implicitHeight + Math.round(12 * tile.s)
         radius: height / 2
-        color: Qt.rgba(0.12, 0.12, 0.12, 0.92)
+        color: L.SYSTEM_OVERLAY_BG_COLOR
         Text {
             id: tipLabel
             anchors.centerIn: parent
-            color: "white"
-            font.pixelSize: Math.round(13 * tile.s)
+            color: L.SYSTEM_FG_COLOR
+            font.pixelSize: tile.fontPx
             text: tile.tooltip.length > 0 ? tile.tooltip : (tile.app ? tile.app.name : "")
         }
     }
@@ -89,6 +98,8 @@ Item {
     MouseArea {
         id: area
         anchors.fill: parent
+        enabled: tile.interactive
+        visible: tile.interactive
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
         onClicked: mouse => tile.activated(mouse.button, mouse.modifiers)

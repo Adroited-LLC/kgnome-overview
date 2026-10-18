@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// One overview per screen. Geometry follows GNOME's ControlsManagerLayout:
+// One overview per screen. Geometry follows GNOME 50's ControlsManagerLayout
+// (js/ui/overviewControls.js) and WorkspacesView (js/ui/workspacesView.js):
 // every region has a box per state and is blended by effect.stateValue.
 import QtQuick
 import QtQuick.Effects
-import Qt5Compat.GraphicalEffects as GE
 import org.kde.kirigami as Kirigami
 import org.kde.kwin as KWinComponents
 import "Layout.js" as L
@@ -24,37 +24,50 @@ FocusScope {
     readonly property bool interactive: effect.active
     readonly property real screenAspect: width / Math.max(1, height)
 
-    // UI scale: GNOME sizes are in logical px; follow the Plasma font size.
+    // UI scale: GNOME sizes are logical px at an 11pt base font; follow the
+    // Plasma font size (gridUnit 18 at the default 10pt font).
     readonly property real s: Kirigami.Units.gridUnit / 18
+    readonly property int fontPx: Math.round(11 * 96 / 72 * s)
 
     // --- GNOME ControlsManagerLayout metrics --------------------------------
     readonly property int spacing: Math.round(height * L.VERTICAL_SPACING_RATIO)
-    readonly property int searchTop: Math.round(spacing * 0.75)
-    readonly property int searchHeight: searchTop + searchEntry.height
+    readonly property int searchTop: Math.round(12 * s)      // .search-entry margin-top
+    readonly property int searchHeight: searchTop + searchEntry.height + Math.round(6 * s)
     readonly property int dashHeight: Math.min(dash.implicitHeight, Math.round(height * L.DASH_MAX_HEIGHT_RATIO))
-    readonly property int thumbnailsHeight: Math.round(height * L.MAX_THUMBNAIL_SCALE)
+    // ThumbnailsBox is only shown with more than one workspace
+    readonly property bool thumbnailsShown: effect.desktopCount > 1
+    readonly property int thumbnailsHeight: thumbnailsShown ? Math.round(height * L.MAX_THUMBNAIL_SCALE) : 0
     readonly property var metrics: ({
         width: width, height: height, startY: 0,
         spacing: spacing, searchHeight: searchHeight, dashHeight: dashHeight,
-        thumbnailsHeight: thumbnailsHeight, expandFraction: 1,
+        thumbnailsHeight: thumbnailsHeight, expandFraction: thumbnailsShown ? 1 : 0,
     })
-
-    readonly property var pickerCard: L.fitAspect(L.workspacesBox(1, metrics), screenAspect)
-    readonly property var gridCard: L.fitAspect(L.workspacesBox(2, metrics), screenAspect)
-    // Workspace card: full screen when hidden, shrinking with the state.
-    readonly property var workspaceCard: sv <= 1
-        ? L.lerpRect(L.rect(0, 0, width, height), pickerCard, pickerFactor)
-        : L.lerpRect(pickerCard, gridCard, gridFactor)
-    // Window layout area: fixed during HIDDEN<->PICKER (ExpoCell interpolates
-    // from the natural window geometry), shrinking towards the grid strip.
-    readonly property var layoutArea: {
-        const card = sv <= 1 ? pickerCard : L.lerpRect(pickerCard, gridCard, gridFactor);
-        const pad = Math.round(L.lerp(spacing * 0.75, spacing * 0.15, gridFactor));
-        return L.inset(card, pad, pad);
-    }
+    readonly property var fullBox: L.rect(0, 0, width, height)
+    readonly property var pickerBox: L.workspacesBox(1, metrics)
+    readonly property var gridBox: L.workspacesBox(2, metrics)
+    readonly property real pickerScale: L.fitAspect(pickerBox, screenAspect).width / Math.max(1, width)
     readonly property var appDisplayBox: L.blend(L.appDisplayBox, sv, metrics)
     readonly property var searchBox: L.searchBox(metrics)
-    readonly property real cardRadius: Math.round(L.lerp(0, 18 * s, pickerFactor) * L.lerp(1, 0.6, gridFactor))
+
+    // workspaces fade out while searching (SearchController)
+    property real workspacesOpacity: searching ? 0 : 1
+    Behavior on workspacesOpacity { NumberAnimation { duration: effect.animationDuration; easing.type: Easing.OutQuad } }
+
+    // WorkspacesView.vfunc_allocate: FitMode.SINGLE (hidden, window picker)
+    // interpolated to FitMode.ALL (app grid), inactive workspaces at 94%.
+    function workspaceRect(index) {
+        const pos = effect.workspacePos;
+        let r;
+        if (sv <= 1) {
+            r = L.fitSingleRect(L.lerpRect(fullBox, pickerBox, pickerFactor), screenAspect, index, pos, s);
+        } else {
+            r = L.lerpRect(L.fitSingleRect(pickerBox, screenAspect, index, pos, s),
+                           L.fitAllRect(gridBox, screenAspect, index, Math.max(1, effect.desktopCount), s),
+                           gridFactor);
+        }
+        const distance = L.clamp(Math.abs(pos - index), 0, 1);
+        return L.scaleRect(r, L.lerp(L.WORKSPACE_INACTIVE_SCALE, 1, 1 - distance));
+    }
 
     function focusSearch() {
         searchEntry.focusInput();
@@ -62,7 +75,9 @@ FocusScope {
 
     function handleKey(event) {
         if (event.key === Qt.Key_Escape) {
-            if (searching) {
+            if (effect.folderOpen.length > 0) {
+                effect.folderOpen = "";
+            } else if (searching) {
                 effect.searchText = "";
             } else if (effect.targetState === effect.stateAppGrid) {
                 effect.setState(effect.stateWindowPicker);
@@ -78,7 +93,7 @@ FocusScope {
         } else if (searching && (event.key === Qt.Key_Down || event.key === Qt.Key_Tab)) {
             searchResults.focusResults();
             event.accepted = true;
-        } else if (!searching && effect.targetState === effect.stateAppGrid) {
+        } else if (!searching && effect.folderOpen.length === 0 && effect.targetState === effect.stateAppGrid) {
             if (event.key === Qt.Key_Left || event.key === Qt.Key_PageUp) {
                 appGrid.previousPage();
                 event.accepted = true;
@@ -86,10 +101,17 @@ FocusScope {
                 appGrid.nextPage();
                 event.accepted = true;
             } else if (event.key === Qt.Key_Home) {
-                appGrid.currentPage = 0;
+                appGrid.goToPage(0);
                 event.accepted = true;
             } else if (event.key === Qt.Key_End) {
-                appGrid.currentPage = appGrid.pageCount - 1;
+                appGrid.goToPage(appGrid.pageCount - 1);
+                event.accepted = true;
+            }
+        } else if (!searching && effect.targetState === effect.stateWindowPicker
+                   && (event.modifiers & Qt.ControlModifier) && (event.modifiers & Qt.AltModifier)) {
+            // GNOME: Ctrl+Alt+Left/Right switch workspaces in the overview
+            if (event.key === Qt.Key_Left || event.key === Qt.Key_Right) {
+                effect.switchDesktop(event.key === Qt.Key_Left ? -1 : 1);
                 event.accepted = true;
             }
         }
@@ -100,107 +122,99 @@ FocusScope {
         id: stackModel
     }
 
-    // --- Background -----------------------------------------------------------
-    KWinComponents.DesktopBackground {
-        id: wallpaper
-        anchors.fill: parent
-        activity: KWinComponents.Workspace.currentActivity
-        desktop: KWinComponents.Workspace.currentDesktop
-        outputName: root.targetScreen.name
-        visible: !effect.blurBackground
-    }
-    MultiEffect {
-        anchors.fill: parent
-        visible: effect.blurBackground
-        source: wallpaper
-        autoPaddingEnabled: false
-        blurEnabled: true
-        blurMax: 64
-        blur: 1.0
-        saturation: -0.2
-    }
-    Rectangle {
-        // dark translucent shade, a bit darker for the app grid
-        anchors.fill: parent
-        color: "#000000"
-        opacity: 0.45 * root.pickerFactor + 0.15 * root.gridFactor
-    }
-    MouseArea {
-        anchors.fill: parent
-        enabled: root.interactive
-        onClicked: effect.hide()
-    }
-
-    // --- Workspace card (current desktop) --------------------------------------
+    // --- Background: #overviewGroup is $system_base_color -----------------------
     Item {
-        id: card
-        x: root.workspaceCard.x
-        y: root.workspaceCard.y
-        width: root.workspaceCard.width
-        height: root.workspaceCard.height
-        z: 1
-        visible: !root.searching || opacity > 0
-        opacity: root.searching ? 0 : 1
-        Behavior on opacity { NumberAnimation { duration: effect.animationDuration; easing.type: Easing.OutQuad } }
-
+        anchors.fill: parent
+        opacity: root.pickerFactor
+        visible: opacity > 0
         KWinComponents.DesktopBackground {
-            id: cardBackground
+            id: wallpaper
             anchors.fill: parent
             activity: KWinComponents.Workspace.currentActivity
             desktop: KWinComponents.Workspace.currentDesktop
             outputName: root.targetScreen.name
-            layer.enabled: root.cardRadius > 0
-            layer.effect: GE.OpacityMask {
-                maskSource: Rectangle {
-                    width: cardBackground.width
-                    height: cardBackground.height
-                    radius: root.cardRadius
-                }
-            }
+            visible: false
         }
-        MouseArea {
+        MultiEffect {
             anchors.fill: parent
-            enabled: root.interactive
-            onClicked: {
-                if (effect.targetState === effect.stateAppGrid) {
-                    effect.setState(effect.stateWindowPicker);
-                } else {
-                    effect.hide();
-                }
-            }
+            visible: effect.blurBackground
+            source: wallpaper
+            autoPaddingEnabled: false
+            blurEnabled: true
+            blurMax: 64
+            blur: 1.0
+            saturation: -0.2
         }
-    }
-    // soft shadow under the card
-    RectangularShadow {
-        x: card.x; y: card.y; width: card.width; height: card.height
-        z: 0.5
-        radius: root.cardRadius
-        blur: 24 * root.s
-        color: Qt.rgba(0, 0, 0, 0.45 * root.pickerFactor)
-        visible: root.pickerFactor > 0 && card.opacity > 0
-        opacity: card.opacity
+        Rectangle {
+            // solid GNOME background, or a GNOME-coloured tint over the blur
+            anchors.fill: parent
+            color: L.SYSTEM_BASE_COLOR
+            opacity: effect.blurBackground ? 0.88 : 1
+        }
     }
 
-    // --- Windows --------------------------------------------------------------
-    WindowPicker {
-        id: windowPicker
-        z: 2
-        x: root.layoutArea.x
-        y: root.layoutArea.y
-        width: root.layoutArea.width
-        height: root.layoutArea.height
-        contentParent: windowLayer
-        screenView: root
-        windowModel: stackModel
-        opacity: card.opacity
-    }
-    Item {
-        // thumbnails' content items live here, in screen coordinates
-        id: windowLayer
+    // Empty space: the window picker closes, the app grid goes back to the picker.
+    // Scrolling over the window picker switches workspaces.
+    MouseArea {
         anchors.fill: parent
-        z: 3
-        opacity: card.opacity
-        visible: opacity > 0
+        enabled: root.interactive
+        onClicked: {
+            if (effect.targetState === effect.stateAppGrid && !root.searching) {
+                effect.setState(effect.stateWindowPicker);
+            } else {
+                effect.hide();
+            }
+        }
+        property real pixelAccum: 0
+        onWheel: wheel => {
+            if (effect.targetState !== effect.stateWindowPicker || root.searching) {
+                return;
+            }
+            const px = Math.abs(wheel.pixelDelta.x) > Math.abs(wheel.pixelDelta.y) ? -wheel.pixelDelta.x : -wheel.pixelDelta.y;
+            if (px !== 0) {
+                // touchpad: the workspaces follow the fingers, snap when they stop
+                pixelAccum += px;
+                effect.wsGestureUpdate(pixelAccum / (root.width * 0.5));
+                wheelSnap.restart();
+                return;
+            }
+            if (wheelLock.running) {
+                return;
+            }
+            const delta = Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y) ? -wheel.angleDelta.x : -wheel.angleDelta.y;
+            if (delta !== 0 && effect.switchDesktop(delta > 0 ? 1 : -1)) {
+                wheelLock.restart();
+            }
+        }
+        Timer {
+            id: wheelLock
+            interval: 150
+        }
+        Timer {
+            id: wheelSnap
+            interval: 120
+            onTriggered: {
+                const p = parent.pixelAccum / (root.width * 0.5);
+                parent.pixelAccum = 0;
+                effect.wsGestureEnd(Math.abs(p) > 0.25, p > 0 ? 1 : -1);
+            }
+        }
+    }
+
+    // --- Workspaces ---------------------------------------------------------------
+    Item {
+        id: workspaces
+        anchors.fill: parent
+        z: 2
+        Repeater {
+            model: KWinComponents.VirtualDesktopModel {}
+            delegate: WorkspaceView {
+                screenView: root
+                windowModel: stackModel
+                box: root.workspaceRect(index)
+                z: index === effect.currentIndex ? 2 : 1
+            }
+        }
     }
 
     // Panels/docks fade out like in KWin's overview.
@@ -226,6 +240,7 @@ FocusScope {
     }
 
     // --- Workspace thumbnails ---------------------------------------------------
+    // _getThumbnailsBoxParams: APP_GRID -> opacity 0, scale 0.5, translationY h/2
     WorkspaceThumbnails {
         id: thumbnails
         z: 40
@@ -235,8 +250,10 @@ FocusScope {
         height: root.thumbnailsHeight
         screenView: root
         windowModel: stackModel
-        opacity: root.pickerFactor * (1 - root.gridFactor) * (root.searching ? 0 : 1)
-        visible: opacity > 0
+        opacity: root.pickerFactor * (1 - root.gridFactor) * root.workspacesOpacity
+        scale: L.lerp(1, 0.5, root.gridFactor)
+        transform: Translate { y: root.gridFactor * thumbnails.height / 2 }
+        visible: root.thumbnailsShown && opacity > 0
         enabled: root.interactive && effect.targetState === effect.stateWindowPicker
     }
 
@@ -292,6 +309,15 @@ FocusScope {
         y: root.height - root.dashHeight * root.pickerFactor
         opacity: root.pickerFactor
         enabled: root.interactive
+    }
+
+    // --- App folder dialog ---------------------------------------------------------
+    FolderDialog {
+        id: folderDialog
+        z: 80
+        anchors.fill: parent
+        screenView: root
+        grid: appGrid
     }
 
     // Shown only if no backend could be created at all.

@@ -28,6 +28,37 @@ var PAGE_SWITCH_TIME = 300;
 // dash.js
 var DASH_ICON_SIZES = [64, 48, 32, 24, 22, 16];
 
+// workspacesView.js
+var WORKSPACE_SWITCH_TIME = 250;
+var WORKSPACE_MIN_SPACING = 24;
+var WORKSPACE_MAX_SPACING = 80;
+var WORKSPACE_INACTIVE_SCALE = 0.94;
+
+// workspace.js
+var WINDOW_PREVIEW_MAXIMUM_SCALE = 0.95;
+var BACKGROUND_CORNER_RADIUS_PIXELS = 30;
+
+// appDisplay.js
+var PAGE_PREVIEW_RATIO = 0.20;
+var FOLDER_SUBICON_FRACTION = 0.4;
+var FOLDER_DIALOG_ANIMATION_TIME = 200;
+var APP_FOLDER_SIZE = 720;          // _app-grid.scss $app_folder_size
+
+// pageIndicators.js
+var INDICATOR_INACTIVE_OPACITY = 128 / 255;
+var INDICATOR_INACTIVE_SCALE = 2 / 3;
+
+// gnome-shell-sass/_colors.scss (dark): system_base_color, system_fg_color,
+// system_overlay_bg_color = mix(base, fg, 90%), system_bg_color = lighten(base, 5%)
+var SYSTEM_BASE_COLOR = "#222226";
+var SYSTEM_FG_COLOR = "#fafafb";
+var SYSTEM_OVERLAY_BG_COLOR = "#38383b";
+var SYSTEM_BG_COLOR = "#2e2e33";
+
+function clamp(v, lo, hi) {
+    return Math.max(lo, Math.min(hi, v));
+}
+
 function lerp(a, b, t) {
     return a + (b - a) * t;
 }
@@ -146,4 +177,47 @@ function gridGeometry(pageWidth, pageHeight, padding, mode, spacing, maxSpacing,
         iconSize: iconSize, tileSize: tileSize,
         left: left, top: top, hSpacing: hSpacing, vSpacing: vSpacing,
     };
+}
+
+// WorkspacesView._getSpacing (horizontal layout). fitMode: 0 SINGLE, 1 ALL.
+function workspaceSpacing(box, aspect, fitMode, s) {
+    var wsWidth = Math.min(box.width, box.height * aspect);
+    var available = (box.width - wsWidth) / 2;
+    var spacing = (available - wsWidth * 0.4) * (1 - fitMode);
+    return clamp(spacing, WORKSPACE_MIN_SPACING * s, WORKSPACE_MAX_SPACING * s);
+}
+
+// WorkspacesView._getFirstFitSingleWorkspaceBox: the current workspace
+// (fractional index `pos`) centred, the others beside it.
+function fitSingleRect(box, aspect, index, pos, s) {
+    var spacing = workspaceSpacing(box, aspect, 0, s);
+    var w = box.height * aspect, h = box.height;
+    if (w > box.width) {
+        w = box.width;
+        h = w / aspect;
+    }
+    var x = box.x + (box.width - w) / 2 + (index - pos) * (w + spacing);
+    return rect(x, box.y + (box.height - h) / 2, w, h);
+}
+
+// WorkspacesView._getFirstFitAllWorkspaceBox: all workspaces side by side,
+// with spacing before the first and after the last.
+function fitAllRect(box, aspect, index, n, s) {
+    var spacing = workspaceSpacing(box, aspect, 1, s);
+    var availableWidth = box.width - spacing * (n + 1);
+    var w = availableWidth / n;
+    var h = w / aspect;
+    var x1 = box.x + spacing;
+    if (h > box.height) {
+        h = box.height;
+        w = h * aspect;
+        x1 += Math.max((availableWidth - w * n) / 2, 0);
+    }
+    return rect(x1 + index * (w + spacing), box.y + (box.height - h) / 2, w, h);
+}
+
+// scale a rect around its centre
+function scaleRect(r, f) {
+    var w = r.width * f, h = r.height * f;
+    return rect(r.x + (r.width - w) / 2, r.y + (r.height - h) / 2, w, h);
 }
