@@ -5,8 +5,12 @@ the top, workspace thumbnails, a window picker, a paged app grid and a dash with
 your favourites, all driven by one animated state value like GNOME's
 `OverviewControls`.
 
-It runs side by side with Plasma's own Overview effect. It does not touch
-Meta+W, the Meta key on its own, or the top-left screen corner.
+Installed with `install.sh` it runs side by side with Plasma's own Overview
+effect and leaves Meta+W, the Meta key on its own and the top-left screen
+corner alone. `dev/make-default.sh` makes it *the* overview, like on GNOME
+(Meta, top-left corner, Meta+W, 4-finger swipes, a Show Apps button in place
+of Kickoff); `dev/restore-defaults.sh` undoes that. See
+[Making it the default](#making-it-the-default).
 
 License: GPL-2.0-or-later. The layout logic and constants are ported from GNOME
 Shell (gnome-50: `overviewControls.js`, `iconGrid.js`, `workspaceThumbnail.js`,
@@ -18,8 +22,11 @@ Shell (gnome-50: `overviewControls.js`, `iconGrid.js`, `workspaceThumbnail.js`,
 |---------------------------|----------------|--------------------------|
 | Toggle overview (windows) | `Meta+O`       | `Toggle GNOME Overview`  |
 | Toggle app grid           | `Meta+Shift+O` | `Toggle GNOME App Grid`  |
-| Top-right screen corner   | off            | effect setting           |
-| Touchpad swipe up / down  | 3 fingers      | `GestureFingers` setting |
+| Hot corner                | top left       | `HotCorner` setting      |
+| Touchpad swipe up / down  | 4 fingers      | `GestureFingers` setting |
+| Meta on its own           | after `make-default.sh` | kwinrc `[ModifierOnlyShortcuts]` |
+| `Meta+W`                  | after `make-default.sh` | second key of `Toggle GNOME Overview` |
+| Panel Show Apps button / `Alt+F1` | after `make-default.sh` | plasmoid `org.kgnome.overview.showapps` |
 
 You can change the shortcuts in System Settings > Keyboard > Shortcuts > KWin.
 GNOME uses `Super+A` for the app grid, but on this machine `Meta+A` is already
@@ -47,10 +54,13 @@ qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Toggle GNOME Overview
   `Enter` still runs it and `←`/`→` edit the text again.
 - `Esc` closes an open folder, then clears the search, then goes from the app
   grid back to the window picker, then closes the overview.
-- Touchpad (3 fingers by default): swipe up goes hidden → window picker → app
-  grid, swipe down goes back. The overview follows the fingers and settles when
-  they lift. Left/right swipes switch workspaces in the window picker and pages
-  in the app grid. KWin's own Overview keeps its 4-finger gestures.
+- Touchpad (4 fingers by default, like GNOME): swipe up goes hidden → window
+  picker → app grid, swipe down goes back. The overview follows the fingers and
+  settles when they lift. Left/right swipes with 3 or 4 fingers stay KWin's own
+  desktop switching (KWin core registers them for both counts); with another
+  finger count the overview registers its own left/right swipes for
+  workspaces/pages. KWin's built-in Overview also binds 4-finger up/down, so
+  switch it off (`make-default.sh` does) to avoid two effects reacting.
 - Window picker: click a window to activate it. Middle-click or the × button
   closes it. Drag a window onto a thumbnail, a side peek or a workspace in the
   strip to move it to that desktop. Click a side workspace to switch to it.
@@ -105,7 +115,8 @@ You don't need `kwin-devel`.
 | KWin effect package `kgnomeoverview` | `~/.local/share/kwin/effects/kgnomeoverview/` (via `kpackagetool6 --type KWin/Effect`) |
 | Symlink to the package | `~/.local/share/kwin-wayland/effects/kgnomeoverview` (see below) |
 | Env script | `~/.config/plasma-workspace/env/kgnome-overview.sh` (adds the module dir to `QML_IMPORT_PATH` at login) |
-| kwinrc | `[Plugins] kgnomeoverviewEnabled=true`, `[Effect-kgnomeoverview] ImplDir=impl-<timestamp>` |
+| kwinrc | `[Plugins] kgnomeoverviewEnabled=true`, `[Effect-kgnomeoverview] ImplDir=impl-<timestamp>`, `FavoritesClient` |
+| Panel plasmoid `org.kgnome.overview.showapps` | `~/.local/share/plasma/plasmoids/` (via `kpackagetool6 --type Plasma/Applet`); not added to a panel |
 
 You can also toggle the effect in System Settings > Window Management >
 Desktop Effects ("GNOME-style Overview").
@@ -118,7 +129,10 @@ Settings live in the effect's settings dialog or in kwinrc
 - `BlurBackground` (true): blur the wallpaper behind the overview.
 - `IconScale` (1.0): multiplier for the GNOME icon sizes (96 px grid, 64 px dash
   at most). Useful at scale 1 on a 4K screen.
-- `TopRightCorner` (false): toggle the overview from the top-right corner.
+- `HotCorner` (1): screen corner that toggles the overview: `0` none, `1` top
+  left (GNOME's), `2` top right, `3` bottom left, `4` bottom right. Plasma's
+  built-in Overview also uses the top-left corner by default;
+  `make-default.sh` frees it (`[Effect-overview] BorderActivate=9`).
 - `FavoritesClient` (set by install.sh, e.g.
   `org.kde.plasma.kickoff.favorites.instance-118`): the launcher whose
   KActivities favourites the dash shares, through Plasma's
@@ -143,9 +157,10 @@ Settings live in the effect's settings dialog or in kwinrc
 - `AppLayout` / `AppFolders`: written by the overview when you rearrange the
   grid. Delete both keys to go back to alphabetical order and the default
   folders.
-- `GestureFingers` (3): fingers for the touchpad swipes, `0` turns them off.
-  The swipe-up gesture is registered globally, so apps no longer get 3-finger
-  swipe-up; the other directions exist only while the overview is open.
+- `GestureFingers` (4): fingers for the touchpad swipes, `0` turns them off.
+  The swipe-up gesture is registered globally, so apps no longer get it; the
+  other directions exist only while the overview is open. (KWin core keeps its
+  3-finger desktop swipes in all four directions whatever this is set to.)
 - `AppFolders` (empty): app folders as `Name=id1;id2;...` entries (desktop file
   ids, comma-separated entries). If empty, the built-in "Utilities" and "System"
   folders (KDE equivalents of GNOME's defaults, see `impl/Folders.js`) are used.
@@ -156,6 +171,56 @@ Example:
 kwriteconfig6 --file kwinrc --group Effect-kgnomeoverview --key IconScale 1.5
 qdbus org.kde.KWin /KWin reconfigure
 ```
+
+## Making it the default
+
+```sh
+dev/make-default.sh                 # all steps
+dev/make-default.sh meta corner     # only some: meta corner builtin gestures panel
+dev/restore-defaults.sh             # undo (oldest backup = the state before any change)
+dev/restore-defaults.sh backup/<timestamp>
+```
+
+Every run of `make-default.sh` first copies `kwinrc`, `kglobalshortcutsrc`,
+`plasma-org.kde.plasma.desktop-appletsrc`, `plasmashellrc` and
+`kactivitymanagerdrc` to `backup/<timestamp>/` (git-ignored). The steps, all
+live in the running session (no logout, no plasmashell or KWin restart):
+
+- `meta`: Meta on its own toggles the overview (kwinrc
+  `[ModifierOnlyShortcuts] Meta=…,invokeShortcut,Toggle GNOME Overview`).
+- `corner`: frees the built-in Overview's screen edges and sets `HotCorner=1`.
+- `builtin`: `[Plugins] overviewEnabled=false`, unloads Plasma's Overview, and
+  moves `Meta+W` from its `Overview` shortcut to `Toggle GNOME Overview`
+  (which keeps `Meta+O`).
+- `gestures`: `GestureFingers=4`.
+- `panel`: replaces Kickoff with the Show Apps plasmoid at the same position,
+  through plasmashell's `evaluateScript`. The dash favourites are not migrated
+  because nothing has to move: they belong to Kickoff's KActivities client id
+  (links in kactivitymanagerd, order in `kactivitymanagerd-statsrc`), and
+  `FavoritesClient` keeps pointing at it after Kickoff is gone. The script
+  prints the panel layout and the favourite count before and after.
+
+`restore-defaults.sh` copies the backed-up files back, puts Kickoff back where
+the launcher is (same index, through `evaluateScript`), returns `Meta+W` to
+Plasma's Overview and reloads it. `kactivitymanagerd-statsrc` (favourite
+order) is only restored with `RESTORE_STATSRC=1`. The re-added Kickoff is a new
+applet instance; the original one (and its favourites client) comes back from
+the restored appletsrc at the next login.
+
+### The Show Apps plasmoid
+
+`plasmoid/org.kgnome.overview.showapps`: a panel icon (default
+`view-app-grid-symbolic`, configurable) that opens the app grid, or the window
+picker (setting "Opens"), through `invokeShortcut` on KWin's global shortcut
+component. It provides `org.kde.plasma.launchermenu`, so Plasma's
+"Activate Application Launcher" shortcut (`Alt+F1`) opens the grid too.
+Add it by hand from "Add Widgets…" (Application Launchers) if you don't use
+`make-default.sh`.
+
+plasmashell caches an applet's QML by URL for the whole session, like KWin
+does for effects: after `kpackagetool6 --upgrade` a running plasmashell keeps
+the old `main.qml` until the next login. (That's why the plasmoid's id changed
+from `org.kgnome.overview.launcher` to `org.kgnome.overview.showapps` once.)
 
 ## How KWin finds the C++ module
 
@@ -239,6 +304,8 @@ Sources: gnome-shell `gnome-50` branch, `js/ui/overviewControls.js`,
   field (so KRunner model resets can't swallow keys); it looks and behaves
   like GNOME's.
 - The app menu has no per-window entries, "App Details" or GPU launch item.
+- The physical Meta key, the hot corner and the touchpad gestures were set up
+  and verified through config/DBus but not by real input on this machine.
 - Touchpad swipes move one step per gesture (hidden → picker or picker → grid),
   not continuously through both like GNOME.
 - Panels are covered by the overview (they fade out, as in KWin's Overview).
