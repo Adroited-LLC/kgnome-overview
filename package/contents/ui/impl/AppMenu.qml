@@ -41,12 +41,17 @@ Item {
         if (!shown) {
             return [];
         }
-        const list = [{text: "New Window", run: () => effect.newWindow(appId)}, {separator: true},
-                      {text: favorite ? "Unpin" : "Pin to Dash",
-                       run: () => favorite ? effect.removeFavorite(appId) : effect.addFavorite(appId, -1)}];
+        // Capture the app now: the actions run after close(), which clears
+        // appId (and with it favorite/running), so reading the properties
+        // inside run() acted on "" (Pin/Unpin/New Window/Quit did nothing).
+        const id = appId;
+        const isFav = favorite;
+        const list = [{text: "New Window", run: () => effect.newWindow(id)}, {separator: true},
+                      {text: isFav ? "Unpin" : "Pin to Dash",
+                       run: () => isFav ? effect.removeFavorite(id) : effect.addFavorite(id, -1)}];
         if (running) {
             list.push({separator: true});
-            list.push({text: "Quit", run: () => effect.quitApp(appId)});
+            list.push({text: "Quit", run: () => effect.quitApp(id)});
         }
         return list;
     }

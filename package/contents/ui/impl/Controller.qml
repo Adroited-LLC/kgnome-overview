@@ -125,7 +125,20 @@ QtObject {
     // unpin and reorder show there live). Without a shared launcher list the
     // current dash is copied into FavoriteApps on the first change.
     function normalizedFavorite(storageId) {
-        return storageId.endsWith(".desktop") ? storageId : storageId + ".desktop";
+        let id = String(storageId || "");
+        if (id.startsWith("applications:")) {
+            id = id.substring(13);
+        }
+        return id.endsWith(".desktop") ? id : id + ".desktop";
+    }
+    // false (and a journal warning) for an empty id, which would otherwise
+    // become "applications:.desktop" in KDE's favourites
+    function validFavorite(id, what) {
+        if (id.length > ".desktop".length) {
+            return true;
+        }
+        console.warn("kgnome-overview:", what, "ignored: no app id");
+        return false;
     }
     function isFavorite(storageId) {
         return favoriteIds.indexOf(normalizedFavorite(storageId)) >= 0;
@@ -145,6 +158,10 @@ QtObject {
     // position: index in the favourites without the app itself (-1 = end)
     function addFavorite(storageId, position) {
         const id = normalizedFavorite(storageId);
+        if (!validFavorite(id, "pin")) {
+            return;
+        }
+        console.info("kgnome-overview: pin", id, "at", position, favoritesShared ? "in KDE favourites" : "in FavoriteApps");
         if (favoritesShared) {
             sharedFavorites.add(id, position);
             return;
@@ -155,6 +172,10 @@ QtObject {
     }
     function removeFavorite(storageId) {
         const id = normalizedFavorite(storageId);
+        if (!validFavorite(id, "unpin")) {
+            return;
+        }
+        console.info("kgnome-overview: unpin", id, favoritesShared ? "from KDE favourites" : "from FavoriteApps");
         if (favoritesShared) {
             sharedFavorites.remove(id);
         } else {
