@@ -78,8 +78,8 @@ Differences:
   desktop alive, and a desktop is only removed when no window at all is on
   it, so tilers like Krohnkite don't lose windows.
 - Default desktop names ("Desktop N") are renumbered after a change.
-- The × to close a desktop and the "+" on the trailing empty thumbnail are
-  not in GNOME.
+- The × to close a desktop is not in GNOME. The trailing empty thumbnail
+  has no marker, like GNOME's.
 
 
 ## How KWin finds the C++ module
