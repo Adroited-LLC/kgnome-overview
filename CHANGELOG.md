@@ -24,6 +24,12 @@ All notable changes to this project are documented here. The format follows
   back to the window picker (differs from GNOME). PR #1 by @HUSTLRX.
 
 ### Fixed
+- The app menu's Pin to Dash, Unpin, New Window and Quit did nothing (grid,
+  folders and dash): the menu closed before the action ran and the action
+  then used an empty app id (Pin/Unpin could add a bogus
+  `applications:.desktop` favourite). Empty ids are now ignored.
+- App search results have the app menu too (right-click), so they can be
+  pinned.
 - A single Meta press opened the app grid instead of the window picker.
   Plasma 6 sends Meta alone to plasmashell's "Activate Application
   Launcher" (kglobalaccel), which the Show Apps button answers with the app
