@@ -217,8 +217,8 @@ qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Toggle GNOME Overview
   an "Unpin" bin while you drag), onto the app grid (where it lands at the drop
   position, like GNOME) or well away from the dash to unpin it. Drag a running
   app or a grid icon into the dash to pin it at that position. Right-click
-  (dash, grid, folders): New Window, Pin to Dash / Unpin, Quit (closes its
-  windows, shown while running).
+  (dash, grid, folders, app search results): New Window, Pin to Dash /
+  Unpin, Quit (closes its windows, shown while running).
 - The dash shows KDE's Favorites, shared two-way with Kickoff/Kicker
   (KActivities favourites, the same list and order the launcher shows):
   pinning, unpinning and reordering in the overview change that list live.
