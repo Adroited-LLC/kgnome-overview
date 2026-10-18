@@ -447,10 +447,11 @@ FocusScope {
             saturation: -0.2
         }
         Rectangle {
-            // Light tint lets the blurred wallpaper show around the workspaces.
+            // Tint over the blurred wallpaper (BackgroundTint, default 30 %);
+            // without blur the background is solid.
             anchors.fill: parent
             color: L.SYSTEM_BASE_COLOR
-            opacity: effect.blurBackground ? 0.30 : 1
+            opacity: effect.blurBackground ? effect.backgroundTint : 1
         }
     }
 

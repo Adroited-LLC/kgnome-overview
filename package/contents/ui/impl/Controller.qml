@@ -31,6 +31,10 @@ QtObject {
     readonly property var cfg: sceneEffect.configuration
     readonly property real iconScale: (cfg && cfg.IconScale > 0) ? cfg.IconScale : 1.0
     readonly property bool blurBackground: cfg ? cfg.BlurBackground !== false : true
+    // BackgroundTint (0-100 %, default 30): the dark overlay over the blur
+    readonly property real backgroundTint: (cfg && cfg.BackgroundTint !== undefined && cfg.BackgroundTint !== null
+                                            && !isNaN(Number(cfg.BackgroundTint)))
+                                           ? Math.max(0, Math.min(100, Number(cfg.BackgroundTint))) / 100 : 0.30
     readonly property var configFavoriteIds: (cfg && cfg.FavoriteApps) ? cfg.FavoriteApps.filter(s => s.length > 0) : []
     // dash favourites: shared with Kickoff (Favorites.qml) or FavoriteApps
     readonly property string favoritesClient: (cfg && cfg.FavoritesClient) ? String(cfg.FavoritesClient) : ""

@@ -13,13 +13,48 @@
     </widget>
    </item>
    <item row="1" column="0">
+    <widget class="QLabel" name="labelBackgroundTint">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="text">
+      <string>Background tint:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QSpinBox" name="kcfg_BackgroundTint">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="toolTip">
+      <string>How dark the overlay over the blurred wallpaper is (0 % = blur only, 100 % = solid). Used only with blur.</string>
+     </property>
+     <property name="suffix">
+      <string> %</string>
+     </property>
+     <property name="minimum">
+      <number>0</number>
+     </property>
+     <property name="maximum">
+      <number>100</number>
+     </property>
+     <property name="singleStep">
+      <number>5</number>
+     </property>
+     <property name="value">
+      <number>30</number>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
     <widget class="QLabel" name="labelIconScale">
      <property name="text">
       <string>Icon size multiplier:</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="1">
+   <item row="2" column="1">
     <widget class="QDoubleSpinBox" name="kcfg_IconScale">
      <property name="minimum">
       <double>0.5</double>
@@ -32,14 +67,14 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="0">
+   <item row="3" column="0">
     <widget class="QLabel" name="labelHotCorner">
      <property name="text">
       <string>Hot corner:</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="1">
+   <item row="3" column="1">
     <widget class="QComboBox" name="kcfg_HotCorner">
      <item><property name="text"><string>None</string></property></item>
      <item><property name="text"><string>Top left (GNOME)</string></property></item>
@@ -48,14 +83,14 @@
      <item><property name="text"><string>Bottom right</string></property></item>
     </widget>
    </item>
-   <item row="4" column="0">
+   <item row="5" column="0">
     <widget class="QLabel" name="gestureLabel">
      <property name="text">
       <string>Touchpad swipe fingers (0 = off):</string>
      </property>
     </widget>
    </item>
-   <item row="4" column="1">
+   <item row="5" column="1">
     <widget class="QSpinBox" name="kcfg_GestureFingers">
      <property name="minimum">
       <number>0</number>
@@ -65,14 +100,14 @@
      </property>
     </widget>
    </item>
-   <item row="5" column="0">
+   <item row="6" column="0">
     <widget class="QLabel" name="labelIconSize">
      <property name="text">
       <string>App grid icon size (px, 0 = GNOME automatic):</string>
      </property>
     </widget>
    </item>
-   <item row="5" column="1">
+   <item row="6" column="1">
     <widget class="QSpinBox" name="kcfg_IconSize">
      <property name="minimum">
       <number>0</number>
@@ -82,14 +117,14 @@
      </property>
     </widget>
    </item>
-   <item row="6" column="0">
+   <item row="7" column="0">
     <widget class="QLabel" name="labelColumns">
      <property name="text">
       <string>App grid columns (0 = GNOME automatic):</string>
      </property>
     </widget>
    </item>
-   <item row="6" column="1">
+   <item row="7" column="1">
     <widget class="QSpinBox" name="kcfg_Columns">
      <property name="minimum">
       <number>0</number>
@@ -99,14 +134,14 @@
      </property>
     </widget>
    </item>
-   <item row="7" column="0">
+   <item row="8" column="0">
     <widget class="QLabel" name="labelRows">
      <property name="text">
       <string>App grid rows (0 = automatic):</string>
      </property>
     </widget>
    </item>
-   <item row="7" column="1">
+   <item row="8" column="1">
     <widget class="QSpinBox" name="kcfg_Rows">
      <property name="minimum">
       <number>0</number>
@@ -116,7 +151,7 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="0" colspan="2">
+   <item row="4" column="0" colspan="2">
     <widget class="QLabel" name="labelFavorites">
      <property name="wordWrap">
       <bool>true</bool>
@@ -126,14 +161,14 @@
      </property>
     </widget>
    </item>
-   <item row="8" column="0">
+   <item row="9" column="0">
     <widget class="QLabel" name="labelDashIconSize">
      <property name="text">
       <string>Dash icon size (px, GNOME 64):</string>
      </property>
     </widget>
    </item>
-   <item row="8" column="1">
+   <item row="9" column="1">
     <widget class="QSpinBox" name="kcfg_DashIconSize">
      <property name="minimum">
       <number>16</number>
@@ -143,14 +178,14 @@
      </property>
     </widget>
    </item>
-   <item row="9" column="0">
+   <item row="10" column="0">
     <widget class="QLabel" name="labelSearchFocusReturnMs">
      <property name="text">
       <string>Search: cursor back to the entry after (ms, 0 = off):</string>
      </property>
     </widget>
    </item>
-   <item row="9" column="1">
+   <item row="10" column="1">
     <widget class="QSpinBox" name="kcfg_SearchFocusReturnMs">
      <property name="minimum">
       <number>0</number>
@@ -160,28 +195,28 @@
      </property>
     </widget>
    </item>
-   <item row="10" column="0" colspan="2">
+   <item row="11" column="0" colspan="2">
     <widget class="QCheckBox" name="kcfg_HideFavoritesInGrid">
      <property name="text">
       <string>Hide dash favourites from the app grid (GNOME)</string>
      </property>
     </widget>
    </item>
-   <item row="11" column="0" colspan="2">
+   <item row="12" column="0" colspan="2">
     <widget class="QCheckBox" name="kcfg_DynamicWorkspaces">
      <property name="text">
       <string>Dynamic workspaces: keep one empty desktop at the end, remove empty desktops (GNOME)</string>
      </property>
     </widget>
    </item>
-   <item row="12" column="0">
+   <item row="13" column="0">
     <widget class="QLabel" name="labelMetaCycle">
      <property name="text">
       <string>Meta key:</string>
      </property>
     </widget>
    </item>
-   <item row="12" column="1">
+   <item row="13" column="1">
     <widget class="QComboBox" name="kcfg_MetaCycle">
      <item><property name="text"><string>Cycle: window picker, app grid, close</string></property></item>
      <item><property name="text"><string>Toggle the window picker (GNOME)</string></property></item>
@@ -190,5 +225,18 @@
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>kcfg_BlurBackground</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>kcfg_BackgroundTint</receiver>
+   <slot>setEnabled(bool)</slot>
+  </connection>
+  <connection>
+   <sender>kcfg_BlurBackground</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>labelBackgroundTint</receiver>
+   <slot>setEnabled(bool)</slot>
+  </connection>
+ </connections>
 </ui>

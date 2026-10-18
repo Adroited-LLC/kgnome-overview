@@ -29,6 +29,12 @@
         <entry name="BlurBackground" type="Bool">
             <default>true</default>
         </entry>
+        <entry name="BackgroundTint" type="Int">
+            <label>Opacity of the dark tint over the blurred wallpaper, in percent (only with BlurBackground).</label>
+            <default>30</default>
+            <min>0</min>
+            <max>100</max>
+        </entry>
         <entry name="IconScale" type="Double">
             <label>Multiplier for app grid / dash icon sizes (1.0 = GNOME sizes).</label>
             <default>1.0</default>
