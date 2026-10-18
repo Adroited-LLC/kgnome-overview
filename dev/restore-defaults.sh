@@ -15,6 +15,9 @@ SRC="backup/$TS"
 [[ -d "$SRC" ]] || { echo "no backup $SRC" >&2; exit 1; }
 echo ">> Restoring from $SRC"
 
+# The System Menu came with the launcher; Kickoff has Log Out again
+scripts/system-menu.sh remove || true
+
 # The panel: re-create Kickoff where the launcher sits, so plasmashell does
 # not have to be restarted. (The appletsrc copy below is the full record and
 # wins at the next plasmashell start.)

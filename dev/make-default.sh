@@ -106,7 +106,8 @@ favorites_count() {  # ordering kept in kactivitymanagerd-statsrc for the client
     kreadconfig6 --file kactivitymanagerd-statsrc --group "Favorites-$client-global" --key ordering | tr ',' '\n' | grep -c . || true
 }
 
-# 5. Panel: replace Kickoff with the launcher plasmoid at the same index.
+# 5. Panel: replace Kickoff with the launcher plasmoid at the same index,
+#    and add the System Menu before the tray (Kickoff had Log Out/Power Off).
 #    The favourites stay with Kickoff's KActivities client id (FavoritesClient
 #    is not changed): links live in kactivitymanagerd, the order in
 #    kactivitymanagerd-statsrc, neither belongs to the applet.
@@ -129,6 +130,9 @@ for (const p of panels()) {
         print("replaced " + type + " #" + id + " with launcher #" + n.id + " at index " + n.index);
     }
 }'
+    # Kickoff was the Log Out / Power Off entry point: make sure the System
+    # Menu is on that panel
+    scripts/system-menu.sh ensure
     sleep 1
     panel_layout | sed 's/^/   after:  /'
     after=$(favorites_count)

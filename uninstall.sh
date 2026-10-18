@@ -21,6 +21,10 @@ if [[ -L "$WAYLAND_LINK" ]]; then
     rm -f "$WAYLAND_LINK"
 fi
 
+echo ">> Removing the system menu"
+"$(dirname "$(readlink -f "$0")")/scripts/system-menu.sh" remove || true
+kpackagetool6 --type Plasma/Applet --remove org.kgnome.systemsheet 2>/dev/null || true
+
 echo ">> Removing effect package"
 kpackagetool6 --type KWin/Effect --remove "$EFFECT_ID" 2>/dev/null || true
 # the panel launcher (put Kickoff back first: dev/restore-defaults.sh)

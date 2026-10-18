@@ -66,6 +66,14 @@ else
     kpackagetool6 --type Plasma/Applet --install "$LAUNCHER" >/dev/null
 fi
 
+echo ">> Installing the system menu plasmoid (org.kgnome.systemsheet)"
+SYSMENU="$SRC_DIR/plasmoid/org.kgnome.systemsheet"
+if kpackagetool6 --type Plasma/Applet --show org.kgnome.systemsheet >/dev/null 2>&1; then
+    kpackagetool6 --type Plasma/Applet --upgrade "$SYSMENU" >/dev/null
+else
+    kpackagetool6 --type Plasma/Applet --install "$SYSMENU" >/dev/null
+fi
+
 # KWin looks for declarative effects in kwin-wayland/effects/ first. Pointing
 # that at the package gives main.qml a URL KWin has not cached yet when the
 # package is first installed into an already-running session.
@@ -107,6 +115,19 @@ if [[ $LOAD == 1 && -n "$QDBUS" ]] && "$QDBUS" org.kde.KWin /Effects >/dev/null 
     fi
     "$QDBUS" org.kde.KWin /Effects loadEffect "$EFFECT_ID" >/dev/null || true
     echo "   loaded: $("$QDBUS" org.kde.KWin /Effects isEffectLoaded "$EFFECT_ID")"
+fi
+
+# The Show Apps button usually replaces Kickoff, and with it the only Log Out
+# button: put the System Menu next to the tray of that panel (once).
+if [[ $LOAD == 1 ]]; then
+    echo ">> System menu on the Show Apps panel"
+    APPLETSRC="${XDG_CONFIG_HOME:-$HOME/.config}/plasma-org.kde.plasma.desktop-appletsrc"
+    if [[ -f "$APPLETSRC" ]] && ! grep -qx "plugin=org.kgnome.systemsheet" "$APPLETSRC"; then
+        BK="$SRC_DIR/backup/$(date +%Y%m%d-%H%M%S)-install"
+        mkdir -p "$BK" && cp -p "$APPLETSRC" "$BK/"
+        echo "   backup: $BK"
+    fi
+    "$SRC_DIR/scripts/system-menu.sh" ensure || true
 fi
 
 cat <<MSG
