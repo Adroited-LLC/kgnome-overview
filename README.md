@@ -19,6 +19,7 @@ Shell (gnome-50: `overviewControls.js`, `iconGrid.js`, `workspaceThumbnail.js`,
 | Toggle overview (windows) | `Meta+O`       | `Toggle GNOME Overview`  |
 | Toggle app grid           | `Meta+Shift+O` | `Toggle GNOME App Grid`  |
 | Top-right screen corner   | off            | effect setting           |
+| Touchpad swipe up / down  | 3 fingers      | `GestureFingers` setting |
 
 You can change the shortcuts in System Settings > Keyboard > Shortcuts > KWin.
 GNOME uses `Super+A` for the app grid, but on this machine `Meta+A` is already
@@ -35,18 +36,28 @@ qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Toggle GNOME Overview
 - Typing starts a search. Results show matching apps first (ranked like GNOME),
   then everything else from KRunner (Milou). `Enter` runs the first result.
   `Down` or `Tab` moves into the KRunner list.
-- `Esc` clears the search. With no search, it goes from the app grid back to the
-  window picker, or closes the overview.
+- `Esc` closes an open folder, then clears the search, then goes from the app
+  grid back to the window picker, then closes the overview.
+- Touchpad (3 fingers by default): swipe up goes hidden → window picker → app
+  grid, swipe down goes back. The overview follows the fingers and settles when
+  they lift. Left/right swipes switch workspaces in the window picker and pages
+  in the app grid. KWin's own Overview keeps its 4-finger gestures.
 - Window picker: click a window to activate it. Middle-click or the × button
-  closes it.
+  closes it. Drag a window onto a thumbnail, a side peek or a workspace in the
+  strip to move it to that desktop. Click a side workspace to switch to it.
+  Click empty space (or the current workspace's wallpaper) to close the
+  overview. The scroll wheel or a two-finger touchpad scroll switches
+  workspaces; `Ctrl+Alt+←/→` too.
 - Workspace thumbnails: click one to switch to that desktop.
-- App grid: the mouse wheel, a touchpad scroll, dragging, `←`/`→`,
-  `PgUp`/`PgDn`, `Home`/`End` or clicking a page dot changes the page. Click an
-  icon to launch the app.
+- App grid: drag anywhere (also starting on an icon), scroll with two fingers,
+  use the wheel, the side arrows, `←`/`→`, `PgUp`/`PgDn`, `Home`/`End` or a page
+  dot to change the page. Click an app to launch it (a running app is focused;
+  middle- or Ctrl-click opens a new window). Click a folder to open it. Click
+  empty space to go back to the window picker. Clicking a workspace in the
+  strip at the top activates it.
 - Dash: click a running app to focus it. Click an app that isn't running to
   launch it. Ctrl-click or middle-click always opens a new instance. The grid
   button at the end toggles the app grid.
-- Clicking an empty area closes the overview.
 
 ## Build / install / uninstall
 
@@ -86,6 +97,12 @@ Settings live in the effect's settings dialog or in kwinrc
   the dash uses the Plasma launcher (Kickoff) favourites from
   `kactivitymanagerd-statsrc`.
 - `Backend` (auto): `module`, `local` or `kicker`, to force an app backend.
+- `GestureFingers` (3): fingers for the touchpad swipes, `0` turns them off.
+  The swipe-up gesture is registered globally, so apps no longer get 3-finger
+  swipe-up; the other directions exist only while the overview is open.
+- `AppFolders` (empty): app folders as `Name=id1;id2;...` entries (desktop file
+  ids, comma-separated entries). If empty, the built-in "Utilities" and "System"
+  folders (KDE equivalents of GNOME's defaults, see `impl/Folders.js`) are used.
 
 Example:
 
@@ -136,33 +153,50 @@ running the old QML until you log out. To avoid that:
 The C++ plugin cannot be unloaded from a running KWin. Changes to `src/` only
 take effect after a log out/in.
 
-## Layout (ported from GNOME)
+## Layout (ported from GNOME 50)
 
-- `spacing = 2% of height`. The search entry is at the top.
-- The dash sits at the bottom, at most 16% of the height.
-- Workspace thumbnails sit under the search entry, at most 5% of the height.
-- `WINDOW_PICKER`: the workspace fills the space between thumbnails and dash.
-- `APP_GRID`: the workspace shrinks to a strip (15% of the height) under the
-  search entry, and the app grid fills the space below it.
-- Each region has a box per state. The boxes are blended by `stateValue`
-  (0 hidden, 1 window picker, 2 app grid), animated over 250 ms with OutQuad
-  easing.
+Sources: gnome-shell `gnome-50` branch, `js/ui/overviewControls.js`,
+`js/ui/workspacesView.js`, `js/ui/workspace.js`, `js/ui/iconGrid.js`,
+`js/ui/appDisplay.js`, `js/ui/pageIndicators.js` and
+`data/theme/gnome-shell-sass/widgets/*.scss`.
+
+- `spacing = 2% of height`. The search entry (24em wide, 12px from the top)
+  is at the top; the dash pill sits at the bottom, at most 16% of the height.
+- Workspace thumbnails sit under the search entry, at most 5% of the height,
+  only with more than one workspace.
+- `WINDOW_PICKER`: `FitMode.SINGLE`. The current workspace is centred in the
+  box between thumbnails and dash, the neighbours sit beside it with
+  `clamp(available − 0.4·width, 24, 80)` px spacing and peek in from the sides.
+  Inactive workspaces are scaled to 94%. Windows are spread out (KWin's
+  ExpoLayout, at most 95% of their real size).
+- `APP_GRID`: `FitMode.ALL`. All workspaces are shown side by side as small live
+  previews in a strip (15% of the height) under the search entry, windows at
+  their natural positions. The thumbnails fade out, scale to 50% and slide
+  down. The app grid fills the space below.
+- Each region has a box per state, blended by `stateValue`
+  (0 hidden, 1 window picker, 2 app grid), animated over 250 ms (OutQuad);
+  workspace switches animate over 250 ms (OutCubic).
 - App grid: the best mode among 8×3 / 6×4 / 4×6 / 3×8 (rows × columns) is
-  picked by aspect ratio. Icons are the largest of 96/64/48/32/24/16 px that
-  fit. Spacing is FILL, capped like GNOME's `max-row/column-spacing`.
+  picked by aspect ratio; icons are the largest of 96/64/48/32/24/16 px that
+  fit; spacing 12 px growing to at most 36 px; page padding 24 px top/bottom
+  and 18 px plus 10% of the width per side (navigation arrows); 10 px
+  horizontal page dots under the grid; pages switch in 300 ms.
+- Colours: background `#222226` (optionally tinted over the blurred
+  wallpaper), dash/folder dialog `#38383b`, search entry `#2e2e33`, accent from
+  the Plasma colour scheme.
 
 ## Known limits
 
 - Keyboard focus/selection of individual windows and app icons is not
   implemented. The arrow keys change app-grid pages.
-- No drag and drop: windows can't be dragged to workspaces, the dash can't be
-  reordered, and there are no app folders.
-- Only the current workspace's windows are shown. Neighbouring workspaces don't
-  peek in from the sides as they do in GNOME.
+- App icons can't be dragged (no reordering, no drag to the dash or to a
+  workspace, no creating folders by dropping). Folders come from the
+  `AppFolders` setting and can't be renamed in the dialog.
+- Touchpad swipes move one step per gesture (hidden → picker or picker → grid),
+  not continuously through both like GNOME.
 - Panels are covered by the overview (they fade out, as in KWin's Overview).
 - KRunner (Milou) results can repeat apps that are already in the Applications
   row. While focus is in the KRunner list, typing does not go back to the
   search entry.
 - Multi-monitor: one overview per screen with a shared search text. Only tested
   on a single 4K monitor.
-- No touchpad gestures yet.
