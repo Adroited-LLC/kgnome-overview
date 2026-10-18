@@ -166,8 +166,9 @@ qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Toggle GNOME Overview
   Not in GNOME: `SearchFocusReturnMs` (250 ms) after the last arrow key the
   cursor returns to the entry while the highlighted result stays selected, so
   `Enter` still runs it and `←`/`→` edit the text again.
-- `Esc` closes an open folder, then clears the search, then goes from the app
-  grid back to the window picker, then closes the overview.
+- `Esc` closes an open menu or folder, then clears the search, then closes
+  the overview. From the app grid it closes the overview directly; GNOME
+  goes back to the window picker first.
 - Touchpad (4 fingers by default, like GNOME): swipe up goes hidden → window
   picker → app grid, swipe down goes back. The overview follows the fingers and
   settles when they lift. Left/right swipes with 3 or 4 fingers stay KWin's own
@@ -292,6 +293,10 @@ Settings…", or in kwinrc `[Effect-kgnomeoverview]`:
 `[Effect-kgnomeoverview]`:
 
 - `BlurBackground` (true): blur the wallpaper behind the overview.
+- `BackgroundTint` (30): strength of the dark overlay over the blurred
+  wallpaper, 0-100 % (0 = blur only, 100 = solid). Only used with
+  `BlurBackground`; without blur the background is solid. In the settings
+  dialog as "Background tint", under the blur checkbox.
 - `IconScale` (1.0): multiplier for the GNOME icon sizes (96 px grid, 64 px dash
   at most). Useful at scale 1 on a 4K screen.
 - `HotCorner` (1): screen corner that toggles the overview: `0` none, `1` top

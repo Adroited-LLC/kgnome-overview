@@ -28,8 +28,8 @@ Sources: gnome-shell `gnome-50` branch, `js/ui/overviewControls.js`,
   fit; spacing 12 px growing to at most 36 px; page padding 24 px top/bottom
   and 18 px plus 10% of the width per side (navigation arrows); 10 px
   horizontal page dots under the grid; pages switch in 300 ms.
-- Colours: background `#222226` (optionally tinted over the blurred
-  wallpaper), dash/folder dialog `#38383b`, search entry `#2e2e33`, accent from
+- Colours: background `#222226`, solid, or with blur as a tint over the
+  blurred wallpaper at `BackgroundTint` % (default 30), dash/folder dialog `#38383b`, search entry `#2e2e33`, accent from
   the Plasma colour scheme.
 
 
