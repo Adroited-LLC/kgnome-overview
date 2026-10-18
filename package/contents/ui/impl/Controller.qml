@@ -56,6 +56,9 @@ QtObject {
         console.info("kgnome-overview: favourites", sharedFavorites ? "shared with " + favoritesClient : "from FavoriteApps (" + c.errorString().trim() + ")");
     }
     readonly property int hotCorner: (cfg && cfg.HotCorner !== undefined) ? cfg.HotCorner : 1
+    // GNOME dynamic workspaces (DynamicWorkspaces.qml)
+    readonly property bool dynamicWorkspaces: cfg ? cfg.DynamicWorkspaces !== false : true
+    property QtObject dyn: null
     readonly property int gestureFingers: (cfg && cfg.GestureFingers !== undefined) ? cfg.GestureFingers : 4
     // App grid size: IconSize px (0 = GNOME's automatic 96..16), Columns
     // (0 = GNOME's 8x3/6x4/4x6/3x8 modes), Rows (0 = automatic)
@@ -490,6 +493,11 @@ QtObject {
         createSharedFavorites();
         createBackend();
         rebuildRunning();
+        const dc = Qt.createComponent(Qt.resolvedUrl("DynamicWorkspaces.qml"));
+        dyn = dc.status === Component.Ready ? dc.createObject(effect, {enabled: Qt.binding(() => effect.dynamicWorkspaces)}) : null;
+        if (!dyn) {
+            console.warn("kgnome-overview: DynamicWorkspaces:", dc.errorString());
+        }
         const lc = Qt.createComponent(Qt.resolvedUrl("AppLayoutModel.qml"));
         appLayout = lc.createObject(effect, {effect: effect});
         // Kicker's category models populate asynchronously; create them early

@@ -52,6 +52,10 @@
             <label>Screen corner that toggles the overview: 0 none, 1 top-left (GNOME), 2 top-right, 3 bottom-left, 4 bottom-right.</label>
             <default>1</default>
         </entry>
+        <entry name="DynamicWorkspaces" type="Bool">
+            <label>GNOME dynamic workspaces: always one empty desktop at the end, empty desktops are removed, dropping a window or app between workspace thumbnails creates one.</label>
+            <default>true</default>
+        </entry>
         <entry name="GestureFingers" type="Int">
             <label>Fingers for the up/down touchpad swipes (0 = off): up = window picker, again = app grid; down goes back. Needs the built-in Overview off when 4.</label>
             <default>4</default>
