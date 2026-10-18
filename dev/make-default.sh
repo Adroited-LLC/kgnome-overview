@@ -85,7 +85,16 @@ step_builtin() {
     echo "   Toggle GNOME Overview keys: $(get_keys "Toggle GNOME Overview" "Toggle GNOME Overview")"
 }
 
-STEPS=(meta corner builtin)
+# 4. Touchpad: 4-finger up/down for ours (default now), no 3-finger grab
+step_gestures() {
+    echo ">> Touchpad: 4-finger swipes"
+    kwriteconfig6 --file kwinrc --group "$GROUP" --key GestureFingers 4
+    "$QDBUS" org.kde.KWin /Effects reconfigureEffect kgnomeoverview >/dev/null
+    echo "   GestureFingers=$(kreadconfig6 --file kwinrc --group "$GROUP" --key GestureFingers)" \
+         "(built-in Overview loaded: $("$QDBUS" org.kde.KWin /Effects isEffectLoaded overview))"
+}
+
+STEPS=(meta corner builtin gestures)
 [[ $# -gt 0 ]] && STEPS=("$@")
 backup
 for s in "${STEPS[@]}"; do

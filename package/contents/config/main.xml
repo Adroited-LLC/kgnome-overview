@@ -53,8 +53,8 @@
             <default>1</default>
         </entry>
         <entry name="GestureFingers" type="Int">
-            <label>Fingers for the touchpad swipe gestures (0 = off). KWin's own overview uses 4.</label>
-            <default>3</default>
+            <label>Fingers for the up/down touchpad swipes (0 = off): up = window picker, again = app grid; down goes back. Needs the built-in Overview off when 4.</label>
+            <default>4</default>
         </entry>
         <entry name="AppFolders" type="StringList">
             <label>App folders as "Name=id1;id2;..." (desktop file ids). Empty: built-in Utilities and System folders.</label>

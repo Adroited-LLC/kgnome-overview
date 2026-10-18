@@ -56,7 +56,7 @@ QtObject {
         console.info("kgnome-overview: favourites", sharedFavorites ? "shared with " + favoritesClient : "from FavoriteApps (" + c.errorString().trim() + ")");
     }
     readonly property int hotCorner: (cfg && cfg.HotCorner !== undefined) ? cfg.HotCorner : 1
-    readonly property int gestureFingers: (cfg && cfg.GestureFingers !== undefined) ? cfg.GestureFingers : 3
+    readonly property int gestureFingers: (cfg && cfg.GestureFingers !== undefined) ? cfg.GestureFingers : 4
     // App grid size: IconSize px (0 = GNOME's automatic 96..16), Columns
     // (0 = GNOME's 8x3/6x4/4x6/3x8 modes), Rows (0 = automatic)
     readonly property int gridIconSize: (cfg && cfg.IconSize !== undefined) ? cfg.IconSize : 112
@@ -446,8 +446,12 @@ QtObject {
                 onCancelled: { effect.gestureEnd(last > 0.5, -1); last = 0; }
             }
         },
+        // Left/right: KWin itself switches desktops with 3 and 4 fingers
+        // (VirtualDesktopManager), and the overview follows the current
+        // desktop, so only other finger counts get our own handlers.
         Instantiator {
-            model: effect.gestureFingers > 0 && effect.visible ? 2 : 0
+            model: effect.gestureFingers > 0 && effect.gestureFingers !== 3 && effect.gestureFingers !== 4
+                   && effect.visible ? 2 : 0
             // index 0: fingers move left -> next workspace / page; 1: right -> previous
             delegate: KWinComponents.SwipeGestureHandler {
                 required property int index
