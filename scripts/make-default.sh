@@ -127,9 +127,9 @@ favorites_count() {  # ordering kept in kactivitymanagerd-statsrc for the client
 
 # 5. Panel: replace Kickoff with the launcher plasmoid at the same index,
 #    and add the System Menu before the tray (Kickoff had Log Out/Power Off).
-#    The favourites stay with Kickoff's KActivities client id (FavoritesClient
-#    is not changed): links live in kactivitymanagerd, the order in
-#    kactivitymanagerd-statsrc, neither belongs to the applet.
+#    The dash has its own list (FavoriteApps, seeded once from Kickoff's
+#    KActivities favourites, which stay in kactivitymanagerd after Kickoff
+#    is removed); the count printed is Kickoff's list.
 step_panel() {
     echo ">> Panel: Kickoff -> GNOME overview launcher"
     local before after
