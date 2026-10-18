@@ -24,9 +24,15 @@ Shell (gnome-50: `overviewControls.js`, `iconGrid.js`, `workspaceThumbnail.js`,
 | Toggle app grid           | `Meta+Shift+O` | `Toggle GNOME App Grid`  |
 | Hot corner                | top left       | `HotCorner` setting      |
 | Touchpad swipe up / down  | 4 fingers      | `GestureFingers` setting |
-| Meta on its own           | after `make-default.sh` | kwinrc `[ModifierOnlyShortcuts]` |
+| Meta on its own           | after `make-default.sh` | `Cycle GNOME Overview` (kwinrc `[ModifierOnlyShortcuts]`) |
 | `Meta+W`                  | after `make-default.sh` | second key of `Toggle GNOME Overview` |
 | Panel Show Apps button / `Alt+F1` | after `make-default.sh` | plasmoid `org.kgnome.overview.showapps` |
+
+Meta on its own cycles: the first press opens the window picker, the second
+goes on to the app grid, the third closes the overview (`MetaCycle=cycle`,
+default). GNOME closes on the second press; set "Meta key" to "Toggle" in the
+effect settings (`MetaCycle=toggle`) for that. `Meta+O`, `Meta+W`, the hot
+corner and the panel button always toggle.
 
 You can change the shortcuts in System Settings > Keyboard > Shortcuts > KWin.
 GNOME uses `Super+A` for the app grid, but on this machine `Meta+A` is already
@@ -130,6 +136,7 @@ You don't need `kwin-devel`.
 | Env script | `~/.config/plasma-workspace/env/kgnome-overview.sh` (adds the module dir to `QML_IMPORT_PATH` at login) |
 | kwinrc | `[Plugins] kgnomeoverviewEnabled=true`, `[Effect-kgnomeoverview] ImplDir=impl-<timestamp>`, `FavoritesClient` |
 | Panel plasmoid `org.kgnome.overview.showapps` | `~/.local/share/plasma/plasmoids/` (via `kpackagetool6 --type Plasma/Applet`); not added to a panel |
+| System menu plasmoid `org.kgnome.systemsheet` | `~/.local/share/plasma/plasmoids/`; added before the system tray of every panel that has the Show Apps button, if there is no System Menu anywhere yet (appletsrc backed up to `backup/<timestamp>-install/` first) |
 
 You can also toggle the effect in System Settings > Window Management >
 Desktop Effects ("GNOME-style Overview").
@@ -170,6 +177,8 @@ Settings live in the effect's settings dialog or in kwinrc
 - `AppLayout` / `AppFolders`: written by the overview when you rearrange the
   grid. Delete both keys to go back to alphabetical order and the default
   folders.
+- `MetaCycle` (cycle): Meta alone cycles picker → app grid → closed; `toggle`
+  = GNOME (second press closes).
 - `DynamicWorkspaces` (true): GNOME dynamic workspaces, see above. Off: the
   desktop count is left alone and no placeholder appears (thumbnail drops and
   the × still work).
@@ -203,21 +212,22 @@ Every run of `make-default.sh` first copies `kwinrc`, `kglobalshortcutsrc`,
 `kactivitymanagerdrc` to `backup/<timestamp>/` (git-ignored). The steps, all
 live in the running session (no logout, no plasmashell or KWin restart):
 
-- `meta`: Meta on its own toggles the overview (kwinrc
-  `[ModifierOnlyShortcuts] Meta=…,invokeShortcut,Toggle GNOME Overview`).
+- `meta`: Meta on its own opens the overview (kwinrc
+  `[ModifierOnlyShortcuts] Meta=…,invokeShortcut,Cycle GNOME Overview`).
 - `corner`: frees the built-in Overview's screen edges and sets `HotCorner=1`.
 - `builtin`: `[Plugins] overviewEnabled=false`, unloads Plasma's Overview, and
   moves `Meta+W` from its `Overview` shortcut to `Toggle GNOME Overview`
   (which keeps `Meta+O`).
 - `gestures`: `GestureFingers=4`.
 - `panel`: replaces Kickoff with the Show Apps plasmoid at the same position,
-  through plasmashell's `evaluateScript`. The dash favourites are not migrated
+  through plasmashell's `evaluateScript`, and makes sure the System Menu sits
+  before the system tray (Kickoff was the Log Out / Power Off entry point). The dash favourites are not migrated
   because nothing has to move: they belong to Kickoff's KActivities client id
   (links in kactivitymanagerd, order in `kactivitymanagerd-statsrc`), and
   `FavoritesClient` keeps pointing at it after Kickoff is gone. The script
   prints the panel layout and the favourite count before and after.
 
-`restore-defaults.sh` copies the backed-up files back, puts Kickoff back where
+`restore-defaults.sh` removes the System Menu, copies the backed-up files back, puts Kickoff back where
 the launcher is (same index, through `evaluateScript`), returns `Meta+W` to
 Plasma's Overview and reloads it. `kactivitymanagerd-statsrc` (favourite
 order) is only restored with `RESTORE_STATSRC=1`. The re-added Kickoff is a new
@@ -246,6 +256,58 @@ plasmashell caches an applet's QML by URL for the whole session, like KWin
 does for effects: after `kpackagetool6 --upgrade` a running plasmashell keeps
 the old `main.qml` until the next login. (That's why the plasmoid's id changed
 from `org.kgnome.overview.launcher` to `org.kgnome.overview.showapps` once.)
+
+### The System Menu plasmoid
+
+`plasmoid/org.kgnome.systemsheet` ("GNOME-style System Menu"): GNOME 50's
+Quick Settings sheet, because without Kickoff there is no Log Out or Power
+Off button. `install.sh` puts it on the Show Apps panel, before the tray.
+Elsewhere: "Add Widgets…" → "GNOME-style System Menu" (any panel or the
+desktop), or inside the system tray: tray settings → Entries → "GNOME-style
+System Menu" → Always shown (it is a System Services tray entry).
+`scripts/system-menu.sh ensure|remove` adds/removes it on the Show Apps panel.
+
+Layout, top to bottom, as in gnome-shell 50 (`js/ui/panel.js`
+`QuickSettings._setupIndicators`, `js/ui/status/*.js`):
+
+- System row (`status/system.js`): battery percentage (only with a battery;
+  opens the power settings), Take Screenshot (`spectacle -r`), Settings
+  (System Settings), Lock, and the power button whose "Power Off" menu slides
+  open inline: Suspend, Restart…, Power Off…, Log Out…, Switch User…. These
+  go through Plasma's SessionManagement; Restart, Power Off and Log Out always
+  show KDE's own confirmation screen. Items the system can't do are hidden.
+- Output volume (plasma-pa, the icon mutes; with more than one output an
+  arrow opens "Sound Output" to pick the device), microphone volume only
+  while an app is recording, and screen brightness per display PowerDevil can
+  control (laptop backlight or DDC/CI monitors).
+- Two-column toggles; ones whose hardware or service is missing are hidden:
+  Wired, Wi-Fi (network list, password asked inline), VPN (list), Bluetooth
+  (paired devices), Power Mode (power-profiles-daemon / tuned-ppd via
+  PowerDevil), Night Light (pauses/resumes; opens its settings if Night
+  Light is off), Dark Style (switches between the default light and dark
+  Global Themes, i.e. `plasma-apply-lookandfeel`, which also resets that
+  theme's colours and icons), Do Not Disturb, Keyboard backlight, Airplane
+  Mode.
+
+Settings (right-click → Configure): panel icon (single power/battery icon or
+GNOME's network/volume/battery icons; the tray always uses one icon), style
+(follow the Plasma theme, GNOME dark, GNOME light), accent (GNOME blue
+`#3584e4` or the Plasma accent), sheet corner radius (0 = square like other
+Plasma popups, GNOME uses 36), user name and picture header (not in GNOME
+50), quick toggles on/off, Dark Style toggle on/off.
+
+Differences from GNOME: GNOME 50 opens this from the top bar's status area
+and shows no user name or avatar in it (the name only appears in the Log Out
+dialog); Plasma always draws its popup frame, so the card fills it; the
+Wi-Fi/Bluetooth lists don't offer hidden networks or pairing (those are in
+System Settings, linked from each menu); Log Out is always offered (GNOME
+hides it on single-user machines).
+
+The applet id is new to plasmashell's QML cache the first time; after
+upgrading an already-loaded System Menu, plasmashell shows the new version
+after the next login (or `systemctl --user restart plasma-plasmashell`).
+`dev/sheet-test.sh` shows the installed version in a separate
+`plasmawindowed` process and takes a screenshot.
 
 ## Dynamic workspaces vs. GNOME
 
