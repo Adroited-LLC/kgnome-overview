@@ -305,4 +305,25 @@ Item {
         id: windowLayer
         anchors.fill: parent
     }
+
+    HoverHandler {
+        id: wsHover
+    }
+    // hover x: side peeks in the window picker (top corner towards the
+    // middle, the outer part is off screen) and every workspace of the app
+    // grid's strip (top right)
+    DesktopCloseButton {
+        readonly property bool inStrip: ws.screenView.gridFactor > 0.99
+        readonly property bool peekRight: ws.index > ws.effect.currentIndex
+        z: 50
+        size: ws.px(28 * ws.s)
+        x: inStrip || !peekRight ? ws.width - width / 2 - ws.px(10 * ws.s)
+                                 : -width / 2 + ws.px(10 * ws.s)
+        y: -height / 2 + ws.px(10 * ws.s)
+        effect: ws.effect
+        desktop: ws.desktop
+        shown: (wsHover.hovered || ws.screenView.devShowCloseButtons) && ws.screenView.interactive && !ws.screenView.searching
+               && ws.screenView.dragWindow === null && ws.screenView.iconDrag === null
+               && (inStrip || (ws.screenView.gridFactor < 0.01 && !ws.current))
+    }
 }

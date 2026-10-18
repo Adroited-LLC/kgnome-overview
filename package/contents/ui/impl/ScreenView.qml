@@ -417,6 +417,7 @@ FocusScope {
     }
 
     // for dev/drive.sh
+    property bool devShowCloseButtons: false    // show every hover x (screenshots)
     readonly property Item thumbnailsBox: thumbnails
     readonly property Item dashItem: dash
 

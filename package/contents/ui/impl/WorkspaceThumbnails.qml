@@ -185,6 +185,21 @@ Item {
                     hoverEnabled: true
                     onClicked: KWinComponents.Workspace.currentDesktop = thumb.desktop
                 }
+
+                HoverHandler {
+                    id: thumbHover
+                }
+
+                // hover x: close this desktop, its windows move next door
+                DesktopCloseButton {
+                    z: 10
+                    x: thumb.width - width / 2 - Math.round(4 * box.screenView.s)
+                    y: -height / 2 + Math.round(4 * box.screenView.s)
+                    size: Math.round(22 * box.screenView.s)
+                    effect: box.screenView.effect
+                    desktop: thumb.desktop
+                    shown: (thumbHover.hovered || box.screenView.devShowCloseButtons) && box.screenView.dragWindow === null && box.screenView.iconDrag === null
+                }
             }
         }
     }

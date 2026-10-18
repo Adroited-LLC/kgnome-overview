@@ -47,6 +47,8 @@ QtObject {
     property var changeLog: []           // timestamps of our own add/remove calls
     property var keepAlive: ({})         // desktop id -> ms timestamp until which it is kept
     property var lastRemoved: ({})       // desktop id -> ms timestamp (dialog/splash grace)
+    // bumped after every check, so bindings on canClose() re-evaluate
+    property int revision: 0
 
     onEnabledChanged: {
         suspended = false;
@@ -55,9 +57,8 @@ QtObject {
     }
 
     function queue() {
-        if (enabled && !suspended) {
-            checkTimer.restart();
-        }
+        // runs (and bumps revision) even when disabled, for canClose() bindings
+        checkTimer.restart();
     }
 
     // A window that keeps the desktops it is on alive (GNOME counts every
@@ -124,6 +125,7 @@ QtObject {
     }
 
     function check() {
+        revision++;
         if (!enabled || suspended) {
             return;
         }
