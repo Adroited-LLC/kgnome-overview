@@ -94,7 +94,49 @@ step_gestures() {
          "(built-in Overview loaded: $("$QDBUS" org.kde.KWin /Effects isEffectLoaded overview))"
 }
 
-STEPS=(meta corner builtin gestures)
+panel_layout() {
+    "$QDBUS" org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript '
+for (const p of panels()) {
+    print("panel " + p.id + " (" + p.location + "): " + p.widgets().sort((a, b) => a.index - b.index).map(w => w.index + ":" + w.type + "#" + w.id).join("  "));
+}'
+}
+favorites_count() {  # ordering kept in kactivitymanagerd-statsrc for the client
+    local client
+    client=$(kreadconfig6 --file kwinrc --group "$GROUP" --key FavoritesClient)
+    kreadconfig6 --file kactivitymanagerd-statsrc --group "Favorites-$client-global" --key ordering | tr ',' '\n' | grep -c . || true
+}
+
+# 5. Panel: replace Kickoff with the launcher plasmoid at the same index.
+#    The favourites stay with Kickoff's KActivities client id (FavoritesClient
+#    is not changed): links live in kactivitymanagerd, the order in
+#    kactivitymanagerd-statsrc, neither belongs to the applet.
+step_panel() {
+    echo ">> Panel: Kickoff -> GNOME overview launcher"
+    local before after
+    before=$(favorites_count)
+    echo "   favourites before: $before"
+    panel_layout | sed 's/^/   before: /'
+    "$QDBUS" org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript '
+for (const p of panels()) {
+    // Kickoff, or the pre-1.1 id of our own launcher
+    for (const k of p.widgets("org.kde.plasma.kickoff").concat(p.widgets("org.kgnome.overview.launcher"))) {
+        const index = k.index, type = k.type, id = k.id;
+        const n = p.addWidget("org.kgnome.overview.showapps");
+        n.currentConfigGroup = ["General"];
+        n.writeConfig("icon", "view-app-grid-symbolic");
+        n.index = index;
+        k.remove();
+        print("replaced " + type + " #" + id + " with launcher #" + n.id + " at index " + n.index);
+    }
+}'
+    sleep 1
+    panel_layout | sed 's/^/   after:  /'
+    after=$(favorites_count)
+    echo "   favourites after: $after (client $(kreadconfig6 --file kwinrc --group "$GROUP" --key FavoritesClient))"
+    [[ "$before" == "$after" ]] || echo "   WARNING: favourites count changed" >&2
+}
+
+STEPS=(meta corner builtin gestures panel)
 [[ $# -gt 0 ]] && STEPS=("$@")
 backup
 for s in "${STEPS[@]}"; do

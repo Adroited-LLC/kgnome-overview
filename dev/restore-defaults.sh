@@ -20,14 +20,11 @@ echo ">> Restoring from $SRC"
 # wins at the next plasmashell start.)
 "$QDBUS" org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript '
 for (const p of panels()) {
-    for (const w of p.widgets("org.kgnome.overview.launcher")) {
-        const ids = p.widgetIds;
-        const i = ids.indexOf(w.id);
+    for (const w of p.widgets("org.kgnome.overview.showapps").concat(p.widgets("org.kgnome.overview.launcher"))) {
+        const i = w.index;
         w.remove();
         const k = p.addWidget("org.kde.plasma.kickoff");
-        const now = p.widgetIds.filter(x => x !== k.id);
-        now.splice(i, 0, k.id);
-        p.widgetIds = now;
+        k.index = i;
         print("re-added Kickoff " + k.id + " at " + i);
     }
 }' || echo "   (plasmashell scripting failed; the appletsrc restore applies at next login)"
