@@ -416,6 +416,13 @@ FocusScope {
         id: stackModel
     }
 
+    // for dev/drive.sh
+    readonly property Item thumbnailsBox: thumbnails
+    readonly property Item dashItem: dash
+
+    Component.onCompleted: effect.registerView(root)
+    Component.onDestruction: effect.unregisterView(root)
+
     // --- Background: #overviewGroup is $system_base_color -----------------------
     Item {
         anchors.fill: parent

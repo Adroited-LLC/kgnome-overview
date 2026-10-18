@@ -395,7 +395,36 @@ QtObject {
     // name of the open app folder ("" = none)
     property string folderOpen: ""
 
+    // --- Dev hook (off by default): kwinrc DevHooks=true, then every new
+    // DevScript value is run as JS with (effect, view, workspace) after
+    // `reconfigureEffect kgnomeoverview`. Lets dev scripts drive drags and
+    // clicks, since input can't be injected on this machine (dev/drive.sh).
+    readonly property bool devHooks: cfg ? cfg.DevHooks === true : false
+    readonly property string devScript: cfg && cfg.DevScript ? String(cfg.DevScript) : ""
+    property bool devReady: false       // don't re-run the stored script on load
+    onDevScriptChanged: if (devReady) runDevScript(devScript)
+    property var views: []
+    function registerView(v) {
+        views = views.filter(x => x !== v).concat([v]);
+    }
+    function unregisterView(v) {
+        views = views.filter(x => x !== v);
+    }
+    function runDevScript(src) {
+        if (!devHooks || !src) {
+            return;
+        }
+        try {
+            const f = new Function("effect", "view", "workspace", src);
+            const r = f(effect, views[0] || null, KWinComponents.Workspace);
+            console.info("kgnome-overview dev:", r === undefined ? "ok" : JSON.stringify(r));
+        } catch (e) {
+            console.warn("kgnome-overview dev error:", e);
+        }
+    }
+
     readonly property list<QtObject> _objects: [
+
         NumberAnimation {
             id: stateAnim
             target: effect
@@ -501,6 +530,7 @@ QtObject {
 
     Component.onCompleted: {
         console.info("kgnome-overview: controller loaded from", Qt.resolvedUrl("."));
+        devReady = true;
         createSharedFavorites();
         createBackend();
         rebuildRunning();

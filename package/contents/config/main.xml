@@ -72,5 +72,13 @@
             <label>auto, module, local or kicker</label>
             <default>auto</default>
         </entry>
+        <entry name="DevHooks" type="Bool">
+            <label>Development only: run DevScript (dev/drive.sh) inside the effect.</label>
+            <default>false</default>
+        </entry>
+        <entry name="DevScript" type="String">
+            <label>Development only: JS run when this value changes and DevHooks is on.</label>
+            <default></default>
+        </entry>
     </group>
 </kcfg>
