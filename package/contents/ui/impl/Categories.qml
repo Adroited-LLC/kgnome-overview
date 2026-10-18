@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Menu categories (from Plasma's Kicker models) to name a new folder after
 // the category two apps share, like GNOME's _findBestFolderName.

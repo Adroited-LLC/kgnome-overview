@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // GNOME's .search-entry (gnome-shell-sass/widgets/_search-entry.scss):
 // width 24em, circular, padding 9px, $system_bg_color, 16px icon with

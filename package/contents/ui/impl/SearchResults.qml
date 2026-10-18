@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Search results like GNOME's SearchResultsView: an app row first (our own
 // model, ranked like GNOME's app search), then the other providers (KRunner,

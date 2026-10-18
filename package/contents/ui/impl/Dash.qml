@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // GNOME 50's Dash (js/ui/dash.js, _dash.scss): favourites, then running apps
 // that are not favourites after a separator, then "Show Apps". Icon size is

@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // One overview per screen. Geometry follows GNOME 50's ControlsManagerLayout
 // (js/ui/overviewControls.js) and WorkspacesView (js/ui/workspacesView.js):

@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // GNOME's PowerToggle (status/system.js): battery icon and percentage in the
 // top row, only when the machine has a battery; opens the power settings.

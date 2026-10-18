@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 # SPDX-License-Identifier: GPL-2.0-or-later
 # User-local install of kgnome-overview (no root needed).
 #   ./install.sh            build + install module, effect package and env script, (re)load effect

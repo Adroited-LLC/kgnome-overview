@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // GNOME app folder tile (.app-folder: raised tile button): a 2x2 preview of
 // the first apps (FOLDER_SUBICON_FRACTION 0.4 of the icon size) and the name.

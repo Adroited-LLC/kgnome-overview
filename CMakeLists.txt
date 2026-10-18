@@ -1,6 +1,10 @@
+# SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 # SPDX-License-Identifier: GPL-2.0-or-later
 cmake_minimum_required(VERSION 3.20)
-project(kgnome-overview VERSION 0.1.0 LANGUAGES CXX)
+project(kgnome-overview
+    VERSION 0.1.0
+    DESCRIPTION "GNOME Shell-style overview, app grid and system menu for KDE Plasma 6"
+    LANGUAGES CXX)
 
 set(QT_MIN_VERSION 6.6.0)
 set(KF_MIN_VERSION 6.0.0)

@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // GNOME Shell 50-style system menu (Quick Settings) for Plasma 6.
 // Structure follows gnome-shell js/ui/panel.js QuickSettings._setupIndicators

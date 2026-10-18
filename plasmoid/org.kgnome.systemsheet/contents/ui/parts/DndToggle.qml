@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Do Not Disturb (GNOME: status/doNotDisturb.js). Same settings writes as
 // Plasma's Notifications applet: "until turned off" is one year ahead.

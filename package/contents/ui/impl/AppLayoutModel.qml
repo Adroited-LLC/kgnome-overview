@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // The app grid's arrangement, like GNOME's org.gnome.shell app-picker-layout
 // and app-folders settings: the order of apps and folders, and the folders'

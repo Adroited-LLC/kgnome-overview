@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // kgnome-overview: a GNOME Shell style overview for KWin (Plasma 6).
 import QtQuick

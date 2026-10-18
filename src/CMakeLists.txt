@@ -1,3 +1,4 @@
+# SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 # SPDX-License-Identifier: GPL-2.0-or-later
 ecm_add_qml_module(kgnomeoverviewplugin
     URI org.kgnome.overview

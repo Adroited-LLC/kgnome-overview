@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // GNOME's ThumbnailsBox: a centred row of workspace previews under the search
 // entry, at most MAX_THUMBNAIL_SCALE (5%) of the screen height.

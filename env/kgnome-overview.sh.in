@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
+# SPDX-License-Identifier: GPL-2.0-or-later
 # kgnome-overview: let KWin (and other Qt apps) find the org.kgnome.overview
 # QML module installed under @KGO_QML_DIR@.
 # Sourced by startplasma at login; takes effect after the next log out/in.

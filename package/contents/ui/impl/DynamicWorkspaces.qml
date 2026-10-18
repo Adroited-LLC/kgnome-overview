@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // GNOME's dynamic workspaces (js/ui/windowManager.js WorkspaceTracker,
 // gnome-50): there is always exactly one empty workspace at the end, and

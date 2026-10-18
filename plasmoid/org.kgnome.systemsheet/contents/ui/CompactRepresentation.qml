@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Panel button: a single power/battery icon, or GNOME's status icons
 // (network, volume, battery/power) in a row.

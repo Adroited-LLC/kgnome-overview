@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Make kgnome-overview the default overview (user config only, no root):
 # backs up the touched config files to backup/<timestamp>/ first; undo with

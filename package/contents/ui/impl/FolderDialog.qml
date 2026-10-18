@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // GNOME's AppFolderDialog (_app-grid.scss .app-folder-dialog): at least
 // 720px square (grown to fit three columns of the grid's icon size),

@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Horizontally paged icon grid shared by the app grid and folder dialogs
 // (GNOME's BaseAppView + IconGrid). Pointer handling lives in one MouseArea

@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Pure-QML fallback backend using Plasma's private Kicker models, for when the
 // C++ module cannot be loaded at all. Icons load synchronously here, and the

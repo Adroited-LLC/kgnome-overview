@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Dash favourites shared two-way with a Plasma launcher (Kickoff) through
 // KActivities favourites: Plasma's private KAStatsFavoritesModel, initialised

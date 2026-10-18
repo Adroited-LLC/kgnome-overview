@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
+# SPDX-License-Identifier: GPL-2.0-or-later
 # dev/drive.sh 'JS'  : run JS inside the effect (needs kwinrc DevHooks=true,
 # see Controller.runDevScript). In scope: effect, view (first screen), workspace.
 # Prints the result line from the journal.

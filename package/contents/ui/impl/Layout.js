@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Geometry helpers and constants ported from GNOME Shell (gnome-50):
 // js/ui/overviewControls.js (ControlsManagerLayout), js/ui/iconGrid.js,

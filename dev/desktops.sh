@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
+# SPDX-License-Identifier: GPL-2.0-or-later
 # Print the virtual desktops and the windows on each (debug helper).
 # Runs a throwaway KWin script; output comes back through the journal.
 set -euo pipefail

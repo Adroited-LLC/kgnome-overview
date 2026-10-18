@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // One workspace of GNOME's WorkspacesView: the wallpaper with rounded
 // corners (workspace-background, 30px) and the windows, which are spread out

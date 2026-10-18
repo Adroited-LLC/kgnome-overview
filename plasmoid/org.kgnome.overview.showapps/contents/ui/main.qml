@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Panel button that opens the kgnome-overview app grid (or window picker)
 // through KWin's global shortcut component, like GNOME's "Show Apps".

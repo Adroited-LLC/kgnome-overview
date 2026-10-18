@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // GNOME-style app tile (_app-grid.scss .overview-tile): icon with the label
 // underneath (6px spacing), 12px padding, rounded hover highlight.

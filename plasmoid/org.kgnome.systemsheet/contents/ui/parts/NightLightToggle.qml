@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Night Light (GNOME: status/nightLight.js). When Night Light is configured
 // the toggle suspends/resumes it the way Plasma's Brightness and Color applet

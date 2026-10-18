@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Screen brightness (GNOME: status/brightness.js), one slider per display
 // that PowerDevil can control (laptop backlight or DDC/CI monitors).

@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
+# SPDX-License-Identifier: GPL-2.0-or-later
 # Reinstall and show relevant journal lines since the install started.
 cd "$(dirname "$0")/.."
 since=$(date '+%Y-%m-%d %H:%M:%S')

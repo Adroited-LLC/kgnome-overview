@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Backend using the C++ module found through the QML import path
 // (QML_IMPORT_PATH from ~/.config/plasma-workspace/env/kgnome-overview.sh,

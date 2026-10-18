@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
+# SPDX-License-Identifier: GPL-2.0-or-later
 # dev/shot.sh NAME [shortcut] [--keep]  : open overview via shortcut, screenshot, close
 cd "$(dirname "$0")/.."
 name=$1; sc=${2:-"Toggle GNOME Overview"}; mkdir -p screenshots

@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // App context menu like GNOME 50's AppMenu (js/ui/appMenu.js), kept simple:
 // New Window, Pin to Dash / Unpin, Quit (only while running). GNOME's

@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // App icon that decodes asynchronously: the C++ module resolves the icon
 // theme path, and Image { asynchronous: true } loads it on a worker thread.

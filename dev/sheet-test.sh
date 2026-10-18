@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
+# SPDX-License-Identifier: GPL-2.0-or-later
 # Reinstall the system menu plasmoid and show it in a throwaway plasmawindowed
 # process (fresh QML engine, so no plasmashell cache), screenshot it.
 #   dev/sheet-test.sh [name] [seconds]

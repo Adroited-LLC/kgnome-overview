@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // GNOME's AppDisplay: apps and folders on horizontally swiped pages, in the
 // saved arrangement (AppLayoutModel; alphabetical until the first change).

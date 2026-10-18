@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Default app folders. GNOME ships "Utilities" and "System" folders
 // (js/ui/appDisplay.js DEFAULT_FOLDERS with Config.UTILITIES_FOLDER_APPS /

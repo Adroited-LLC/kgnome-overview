@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Hover "x" on workspace thumbnails, side peeks and the app grid's strip:
 // closes the desktop. Not in GNOME (its workspaces only go away when empty);

@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 // SPDX-License-Identifier: GPL-2.0-or-later
 // The Quick Settings sheet. Layout, top to bottom, as in GNOME 50
 // (js/ui/panel.js QuickSettings._setupIndicators, N_QUICK_SETTINGS_COLUMNS 2):
