@@ -2,3 +2,4 @@ build/
 screenshots/
 build.cmake.log
 .refs/
+backup/
