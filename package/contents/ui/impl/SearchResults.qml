@@ -326,6 +326,10 @@ Item {
                         focusRing: selected && results.resultsFocused
                         app: results.backend ? (results.backend.revision, results.backend.appAt("search", index)) : null
                         onActivated: results.effect.launch("search", index)
+                        // GNOME: app search results have the app menu too
+                        menuEnabled: app !== null && !!app.storageId
+                        onMenuRequested: results.screenView.openAppMenu(app.storageId.replace(/\.desktop$/, ""),
+                                                                        mapToItem(results.screenView, width / 2, 0), true)
                     }
                 }
             }

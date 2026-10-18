@@ -32,7 +32,11 @@ Item {
     readonly property int padding: tilePadding
     readonly property int labelHeight: showLabel ? Math.round(fontPx * 1.4) : 0
 
+    // right-click emits menuRequested instead of activated (search results)
+    property bool menuEnabled: false
+
     signal activated(int button, int modifiers)
+    signal menuRequested()
 
     implicitWidth: iconSize + 2 * padding
     implicitHeight: iconSize + 2 * padding + (showLabel ? Math.round(6 * s) + labelHeight : 0)
@@ -106,7 +110,13 @@ Item {
         enabled: tile.interactive
         visible: tile.interactive
         hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
-        onClicked: mouse => tile.activated(mouse.button, mouse.modifiers)
+        acceptedButtons: Qt.LeftButton | Qt.MiddleButton | (tile.menuEnabled ? Qt.RightButton : Qt.NoButton)
+        onClicked: mouse => {
+            if (mouse.button === Qt.RightButton) {
+                tile.menuRequested();
+            } else {
+                tile.activated(mouse.button, mouse.modifiers);
+            }
+        }
     }
 }
