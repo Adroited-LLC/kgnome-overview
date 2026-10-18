@@ -41,8 +41,44 @@ Rectangle {
     signal switchUser()
     signal closeRequested()
 
+    // open toggle menu (a toggle's file name), see the toggle grid
+    property string openMenu: ""
+    property int toggleRev: 0
+    function cellOf(index) {
+        let v = 0;
+        for (let j = 0; j < index; j++) {
+            const l = toggleRepeater.itemAt(j);
+            if (l && l.visible) v++;
+        }
+        return v;
+    }
+    readonly property var openToggle: {
+        toggleRev;
+        for (let j = 0; j < toggleRepeater.count; j++) {
+            const l = toggleRepeater.itemAt(j);
+            if (l && l.visible && l.modelData === openMenu) return l.item;
+        }
+        return null;
+    }
+    readonly property int menuRow: {
+        toggleRev;
+        for (let j = 0; j < toggleRepeater.count; j++) {
+            const l = toggleRepeater.itemAt(j);
+            if (l && l.visible && l.modelData === openMenu) return Math.floor(cellOf(j) / 2);
+        }
+        return -1;
+    }
+    onPowerMenuOpenChanged: if (powerMenuOpen) { openMenu = ""; if (volume.item) volume.item.menuOpen = false; }
+    Connections {
+        target: volume.item
+        ignoreUnknownSignals: true
+        function onMenuOpenChanged() { if (volume.item.menuOpen) { sheet.openMenu = ""; sheet.powerMenuOpen = false; } }
+    }
+    onOpenMenuChanged: if (openMenu !== "") { powerMenuOpen = false; if (volume.item) volume.item.menuOpen = false; }
+
     onIsOpenChanged: {
         if (!isOpen) {
+            openMenu = "";
             powerMenuOpen = false;
             if (volume.item) volume.item.menuOpen = false;
         } else {
@@ -295,6 +331,13 @@ Rectangle {
             visible: status === Loader.Ready && item.available
             onLoaded: item.pal = Qt.binding(() => sheet.pal)
         }
+        Loader {   // only while an app is recording, like GNOME
+            id: input
+            Layout.fillWidth: true
+            source: "parts/InputSlider.qml"
+            visible: status === Loader.Ready && item.available
+            onLoaded: item.pal = Qt.binding(() => sheet.pal)
+        }
         Loader {
             id: brightness
             Layout.fillWidth: true
@@ -303,30 +346,70 @@ Rectangle {
             onLoaded: item.pal = Qt.binding(() => sheet.pal)
         }
 
-        // Toggles (1 column each, N_QUICK_SETTINGS_COLUMNS = 2), GNOME order
+        // Toggles (1 column each, N_QUICK_SETTINGS_COLUMNS = 2) in GNOME's
+        // order (panel.js _setupIndicators). A toggle's menu opens as a card
+        // spanning both columns right below the toggle's row.
         GridLayout {
+            id: toggleGrid
             Layout.fillWidth: true
             visible: sheet.showToggles
             columns: 2
             rowSpacing: G.gridSpacing * sheet.u
             columnSpacing: G.gridSpacing * sheet.u
+
             Repeater {
-                model: ["WifiToggle", "BluetoothToggle", "NightLightToggle", "DarkStyleToggle", "DndToggle"]
+                id: toggleRepeater
+                onItemAdded: sheet.toggleRev++
+                onItemRemoved: sheet.toggleRev++
+                model: ["WiredToggle", "WifiToggle", "VpnToggle", "BluetoothToggle", "PowerModeToggle",
+                        "NightLightToggle", "DarkStyleToggle", "DndToggle", "KeyboardToggle", "AirplaneToggle"]
                 Loader {
                     id: toggleLoader
                     required property string modelData
+                    required property int index
+                    readonly property int cell: { sheet.toggleRev; return sheet.cellOf(index); }
+                    readonly property int baseRow: Math.floor(cell / 2)
+                    Layout.row: baseRow + (sheet.menuRow >= 0 && baseRow > sheet.menuRow ? 1 : 0)
+                    Layout.column: cell % 2
                     Layout.fillWidth: true
                     Layout.preferredWidth: G.toggleWidth * sheet.u
                     active: modelData !== "DarkStyleToggle" || sheet.showDarkStyle
                     source: "parts/" + modelData + ".qml"
                     visible: status === Loader.Ready && item.available
-                    onLoaded: item.pal = Qt.binding(() => sheet.pal)
+                    onVisibleChanged: {
+                        sheet.toggleRev++;
+                        if (!visible && sheet.openMenu === modelData) sheet.openMenu = "";
+                    }
+                    onLoaded: {
+                        sheet.toggleRev++;
+                        item.pal = Qt.binding(() => sheet.pal);
+                        item.menuOpen = Qt.binding(() => sheet.openMenu === modelData);
+                    }
                     Connections {
                         target: toggleLoader.item
                         ignoreUnknownSignals: true
                         function onOpenSettings() { sheet.closeRequested(); }
+                        function onMenuClicked() { sheet.openMenu = sheet.openMenu === toggleLoader.modelData ? "" : toggleLoader.modelData; }
                     }
                 }
+            }
+            MenuCard {
+                id: toggleMenu
+                readonly property var toggle: sheet.openToggle
+                Layout.row: Math.max(0, sheet.menuRow + 1)
+                Layout.column: 0
+                Layout.columnSpan: 2
+                open: sheet.menuRow >= 0
+                u: sheet.u
+                pal: sheet.pal
+                // keep the last content while the card slides shut
+                property var shown: null
+                onToggleChanged: if (toggle) shown = toggle
+                iconName: shown ? (shown.menuIcon || shown.iconName) : ""
+                title: shown ? (shown.menuTitle || shown.title) : ""
+                subtitle: shown ? shown.menuSubtitle : ""
+                active: shown ? shown.checked : false
+                content: shown ? shown.menu : null
             }
         }
     }

@@ -16,7 +16,13 @@ Item {
     property string subtitle
     property bool checked: false
     property bool available: true
-    property bool hasMenu: false
+    // GNOME QuickMenuToggle: content of the menu card opened by the arrow
+    property Component menu: null
+    property bool hasMenu: menu !== null
+    property bool menuOpen: false
+    property string menuTitle
+    property string menuSubtitle
+    property string menuIcon
     property string menuToolTip
     property real u: Kirigami.Units.gridUnit / 18
     property var pal: G.palette(true)
