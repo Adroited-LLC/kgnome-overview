@@ -31,6 +31,7 @@ QtObject {
     readonly property real iconScale: (cfg && cfg.IconScale > 0) ? cfg.IconScale : 1.0
     readonly property bool blurBackground: cfg ? cfg.BlurBackground !== false : true
     readonly property var favoriteIds: (cfg && cfg.FavoriteApps) ? cfg.FavoriteApps.filter(s => s.length > 0) : []
+    readonly property int searchFocusReturnMs: (cfg && cfg.SearchFocusReturnMs !== undefined) ? cfg.SearchFocusReturnMs : 250
     readonly property int gestureFingers: (cfg && cfg.GestureFingers !== undefined) ? cfg.GestureFingers : 3
     // App grid size: IconSize px (0 = GNOME's automatic 96..16), Columns
     // (0 = GNOME's 8x3/6x4/4x6/3x8 modes), Rows (0 = automatic)

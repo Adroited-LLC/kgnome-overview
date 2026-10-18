@@ -239,6 +239,7 @@ FocusScope {
         }
     }
 
+    readonly property bool searchResultsFocused: searchResults.resultsFocused
     function focusSearch() {
         searchEntry.focusInput();
     }
@@ -260,12 +261,23 @@ FocusScope {
                 searchResults.activateSelected();
                 event.accepted = true;
             }
-        } else if (searching && (event.key === Qt.Key_Up || event.key === Qt.Key_Down || event.key === Qt.Key_Tab
-                                 || ((event.key === Qt.Key_Left || event.key === Qt.Key_Right)
-                                     && !(event.modifiers & (Qt.ShiftModifier | Qt.ControlModifier))))) {
-            // the selection moves, keyboard focus stays in the search entry
-            if (searchResults.moveSelection(event.key)) {
+        } else if (searching && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))
+                   && (event.key === Qt.Key_Up || event.key === Qt.Key_Down || event.key === Qt.Key_Tab
+                       || event.key === Qt.Key_Backtab
+                       || ((event.key === Qt.Key_Left || event.key === Qt.Key_Right)
+                           && !(event.modifiers & Qt.ShiftModifier)))) {
+            // GNOME's navigateFocus; keys the entry keeps fall through to it
+            if (searchResults.navigate(event.key, searchEntry.cursorAtEnd)) {
                 event.accepted = true;
+            }
+        } else if (searching && searchResults.resultsFocused) {
+            // GNOME _onStageKeyPress -> startSearch: text keys return to the entry
+            // (not accepted, so the TextInput applies them); other keys stay
+            if (event.text.length > 0 && event.text.charCodeAt(0) >= 32 || event.key === Qt.Key_Backspace
+                    || event.key === Qt.Key_Delete) {
+                searchResults.focusEntry();
+            } else if (event.key === Qt.Key_Home || event.key === Qt.Key_End) {
+                searchResults.focusEntry();
             }
         } else if (!searching && effect.folderOpen.length === 0 && effect.targetState === effect.stateAppGrid) {
             if (event.key === Qt.Key_Left || event.key === Qt.Key_PageUp) {

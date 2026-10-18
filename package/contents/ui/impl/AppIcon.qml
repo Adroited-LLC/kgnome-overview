@@ -5,6 +5,7 @@
 // (AppGrid) does hit testing and sets hovered/pressed, so drags can start on
 // top of icons.
 import QtQuick
+import org.kde.kirigami as Kirigami
 import "Layout.js" as L
 
 Item {
@@ -16,6 +17,7 @@ Item {
     property int fontPx: Math.round(15 * s)
     property bool showLabel: true
     property bool selected: false
+    property bool focusRing: false     // GNOME :focus (keyboard focus) ring
     property bool running: false
     property string tooltip: ""
     property bool interactive: true
@@ -38,6 +40,8 @@ Item {
         anchors.fill: parent
         radius: tile.radius
         color: Qt.rgba(1, 1, 1, tile.pressed ? 0.15 : (tile.selected || tile.hovered) ? 0.1 : 0)
+        border.width: tile.focusRing ? Math.round(2 * tile.s) : 0
+        border.color: Qt.alpha(Kirigami.Theme.highlightColor, 0.7)
         Behavior on color { ColorAnimation { duration: 100 } }
     }
 

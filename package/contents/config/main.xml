@@ -9,6 +9,10 @@
             <label>Desktop file ids for the dash. Empty: use the Plasma launcher favourites.</label>
             <default></default>
         </entry>
+        <entry name="SearchFocusReturnMs" type="Int">
+            <label>Milliseconds after the last arrow key in the search results before the text cursor returns to the search entry (the highlighted result stays selected). 0 = off (GNOME).</label>
+            <default>250</default>
+        </entry>
         <entry name="BlurBackground" type="Bool">
             <default>true</default>
         </entry>

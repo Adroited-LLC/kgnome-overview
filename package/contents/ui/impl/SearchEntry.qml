@@ -14,6 +14,11 @@ FocusScope {
     readonly property QtObject effect: screenView.effect
     readonly property real s: screenView.s
     readonly property alias text: input.text
+    readonly property bool cursorAtEnd: input.cursorPosition === input.text.length && input.selectedText.length === 0
+    // GNOME keeps the cursor while a result has focus; we hide it so it is
+    // visible where arrow keys go (and when SearchFocusReturnMs brings it back)
+    readonly property bool showCursor: input.activeFocus && !screenView.searchResultsFocused
+    onShowCursorChanged: input.cursorVisible = showCursor
 
     // 24em at GNOME's 11pt base font
     width: Math.round(24 * screenView.fontPx)
