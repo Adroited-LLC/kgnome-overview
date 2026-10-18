@@ -158,6 +158,17 @@ QtObject {
         }
     }
 
+    // GNOME ThumbnailsBox.acceptDrop (placeholder) for an app: a new
+    // workspace at index, kept alive while the app starts, launch there.
+    function launchOnNewDesktop(storageId, index) {
+        const d = dyn ? dyn.insertDesktop(index) : null;
+        if (!d) {
+            return;
+        }
+        dyn.keepWorkspaceAlive(d, 15000);
+        launchOnDesktop(storageId, d);
+    }
+
     // --- Workspaces (GNOME's _scrollAdjustment) -----------------------------
     readonly property var desktops: KWinComponents.Workspace.desktops
     readonly property int desktopCount: desktops.length

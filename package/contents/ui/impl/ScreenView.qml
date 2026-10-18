@@ -78,7 +78,67 @@ FocusScope {
     }
     function moveWindowDrag(p) {
         dragPoint = p;
+        showDropTarget(dropTargetAt(p));
     }
+
+    // --- Drop targets for windows and apps --------------------------------------
+    // {type: "desktop", desktop} or {type: "newDesktop", index, where} or null.
+    // New workspaces (GNOME: only with dynamic workspaces) come from the gap
+    // between two workspace thumbnails (drop placeholder) or, in the app grid,
+    // between two workspaces of the strip at the top.
+    readonly property bool canCreateDesktops: effect.dyn !== null && effect.dyn.enabled && !effect.dyn.suspended
+    readonly property real cutSize: Math.round(10 * s)        // WORKSPACE_CUT_SIZE
+    property var dropNew: ({where: "", index: -1})
+    function stripGapAt(p) {
+        // gaps between the app grid's workspace strip previews
+        const n = effect.desktopCount;
+        for (let i = 0; i < n; ++i) {
+            const r = workspaceRect(i);
+            if (p.y < r.y || p.y > r.y + r.height) {
+                continue;
+            }
+            const prev = i > 0 ? workspaceRect(i - 1) : null;
+            const x1 = (prev ? prev.x + prev.width : r.x) - cutSize;
+            const x2 = r.x + cutSize;
+            if (p.x > x1 && p.x <= x2) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    function dropTargetAt(p) {
+        if (thumbnails.visible) {
+            const tp = mapToItem(thumbnails, p.x, p.y);
+            const t = thumbnails.dropAt(tp.x, tp.y, canCreateDesktops);
+            if (t) {
+                return t.desktop ? {type: "desktop", desktop: t.desktop} : {type: "newDesktop", index: t.insertAt, where: "thumbnails"};
+            }
+        }
+        if (canCreateDesktops && gridFactor > 0.99 && !searching) {
+            const i = stripGapAt(p);
+            if (i >= 0) {
+                return {type: "newDesktop", index: i, where: "strip"};
+            }
+        }
+        const d = desktopAtPoint(p);
+        return d ? {type: "desktop", desktop: d} : null;
+    }
+    function showDropTarget(t) {
+        dropDesktop = t && t.type === "desktop" ? t.desktop : null;
+        const n = t && t.type === "newDesktop" ? {where: t.where, index: t.index} : {where: "", index: -1};
+        if (n.where !== dropNew.where || n.index !== dropNew.index) {
+            dropNew = n;
+        }
+    }
+    // GNOME ThumbnailsBox.acceptDrop with a placeholder: insertWorkspace, then
+    // move the window there / launch the app there.
+    function dropWindowOnNewDesktop(window, index) {
+        const d = effect.dyn ? effect.dyn.insertDesktop(index) : null;
+        if (d) {
+            window.desktops = [d];
+        }
+    }
+
     function desktopAtPoint(p) {
         if (thumbnails.visible) {
             const tp = mapToItem(thumbnails, p.x, p.y);
@@ -99,10 +159,16 @@ FocusScope {
     function endWindowDrag(p) {
         const window = dragWindow;
         dragWindow = null;
+        showDropTarget(null);
         if (!window || !p) {
             return;
         }
-        const desktop = desktopAtPoint(p);
+        const t = dropTargetAt(p);
+        if (t && t.type === "newDesktop") {
+            dropWindowOnNewDesktop(window, t.index);
+            return;
+        }
+        const desktop = t ? t.desktop : null;
         if (desktop && !(window.desktops.length === 1 && window.desktops[0] === desktop)) {
             window.desktops = [desktop];
         }
@@ -169,13 +235,13 @@ FocusScope {
             dash.dragLeave();
         }
         if (target.type === "none" && kind === "app") {
-            const d = desktopAtPoint(p);
-            if (d) {
-                target = {type: "desktop", desktop: d};
+            const t = dropTargetAt(p);
+            if (t) {
+                target = t;
             }
         }
         dashDropHover = target.type === "dash";
-        dropDesktop = target.type === "desktop" ? target.desktop : null;
+        showDropTarget(target.type === "desktop" || target.type === "newDesktop" ? target : null);
         iconDropTarget = target;
     }
     function iconDragEnd(p) {
@@ -190,7 +256,7 @@ FocusScope {
         iconDrag = null;
         iconDropTarget = {type: "none"};
         dashDropHover = false;
-        dropDesktop = null;
+        showDropTarget(null);
         appGrid.paged.dragEnd();
         folderDialog.grid.dragEnd();
         dash.dragEnd();
@@ -249,6 +315,9 @@ FocusScope {
             break;
         case "desktop":
             effect.launchOnDesktop(e.id, target.desktop);
+            break;
+        case "newDesktop":
+            effect.launchOnNewDesktop(e.id, target.index);
             break;
         default:
             if (fromDash) {
@@ -480,6 +549,22 @@ FocusScope {
         transform: Translate { y: root.gridFactor * thumbnails.height / 2 }
         visible: root.thumbnailsShown && opacity > 0
         enabled: root.interactive && effect.targetState === effect.stateWindowPicker
+        placeholderPos: root.dropNew.where === "thumbnails" ? root.dropNew.index : -1
+    }
+
+    // drop placeholder between two workspaces of the app grid's strip
+    Rectangle {
+        z: 41
+        readonly property int index: root.dropNew.where === "strip" ? root.dropNew.index : -1
+        readonly property var r: index >= 0 ? root.workspaceRect(index) : null
+        readonly property var prev: index > 0 ? root.workspaceRect(index - 1) : null
+        visible: r !== null
+        width: Math.max(2, Math.round(4 * root.s))
+        height: r ? r.height : 0
+        radius: width / 2
+        x: r ? (prev ? (prev.x + prev.width + r.x) / 2 : r.x - root.cutSize) - width / 2 : 0
+        y: r ? r.y : 0
+        color: Kirigami.Theme.highlightColor
     }
 
     // --- App grid ---------------------------------------------------------------

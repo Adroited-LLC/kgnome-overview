@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // GNOME's ThumbnailsBox: a centred row of workspace previews under the search
 // entry, at most MAX_THUMBNAIL_SCALE (5%) of the screen height.
+// Dropping a window or app between two thumbnails creates a workspace there
+// (dynamic workspaces only), like GNOME's drop placeholder.
 // _workspace-thumbnails.scss: .workspace-thumbnails spacing 6px, padding 6px;
 // .workspace-thumbnail border-radius 4px; .workspace-thumbnail-indicator
 // 3px accent border, radius 8px.
@@ -22,27 +24,81 @@ Item {
     readonly property real thumbSpacing: Math.round(6 * screenView.s)
     readonly property real thumbScale: thumbHeight / targetScreen.geometry.height
 
-    // desktop under a point in this item's coordinates, or null
-    function desktopAt(x, y) {
+    // --- drop targets, GNOME ThumbnailsBox.handleDragOver (workspaceThumbnail.js) --
+    // WORKSPACE_CUT_SIZE: a "cut" into the sides of each thumbnail so the
+    // placeholder between two thumbnails is easy to hit.
+    readonly property real cutSize: Math.round(10 * screenView.s)
+    // .placeholder width: 18px
+    readonly property real placeholderWidth: Math.round(18 * screenView.s)
+    // index a new workspace would be inserted at (placeholder shown), or -1
+    property int placeholderPos: -1
+    readonly property int count: thumbRepeater.count
+    readonly property real gapWidth: placeholderPos >= 0 ? placeholderWidth + thumbSpacing : 0
+    readonly property real contentWidth: count * thumbWidth + Math.max(0, count - 1) * thumbSpacing + gapWidth
+    function thumbX(i) {
+        return Math.round((width - contentWidth) / 2 + i * (thumbWidth + thumbSpacing)
+                          + (placeholderPos >= 0 && i >= placeholderPos ? gapWidth : 0));
+    }
+
+    // What a drop at (x, y) (this item's coordinates) would hit:
+    // {desktop} for a thumbnail, {insertAt} for the gap before thumbnail
+    // insertAt (only if canCreate, like GNOME's dynamic-workspaces check), or
+    // null. Zones as in _getPlaceholderTarget/_withinWorkspace.
+    function dropAt(x, y, canCreate) {
         if (y < 0 || y > height) {
             return null;
         }
-        const p = mapToItem(row, x, y);
-        for (let i = 0; i < thumbRepeater.count; ++i) {
+        for (let i = 0; i < count; ++i) {
             const t = thumbRepeater.itemAt(i);
-            if (t && p.x >= t.x - thumbSpacing / 2 && p.x <= t.x + t.width + thumbSpacing / 2) {
-                return t.desktop;
+            if (!t) {
+                continue;
+            }
+            const tx = thumbX(i);
+            if (canCreate) {
+                let x1 = tx - thumbSpacing - cutSize;
+                const x2 = tx + cutSize;
+                if (i === 0) {
+                    x1 += thumbSpacing + cutSize;
+                }
+                if (i === placeholderPos) {
+                    x1 -= placeholderWidth + thumbSpacing;
+                }
+                if (x > x1 && x <= x2) {
+                    return {insertAt: i};
+                }
+            }
+            const w1 = tx + cutSize;
+            const w2 = tx + thumbWidth - cutSize + (i === count - 1 ? cutSize : 0);
+            if (x > w1 && x <= w2) {
+                return {desktop: t.desktop};
             }
         }
         return null;
     }
+    // compatibility: desktop under a point, or null
+    function desktopAt(x, y) {
+        const t = dropAt(x, y, false);
+        return t ? t.desktop : null;
+    }
 
-    Row {
-        id: row
-        anchors.horizontalCenter: parent.horizontalCenter
+    // drop placeholder: a vertical bar in the gap that opens between thumbnails
+    Rectangle {
+        z: 5
+        visible: box.placeholderPos >= 0
+        readonly property real gapX: box.placeholderPos >= 0 ? box.thumbX(box.placeholderPos) - box.thumbSpacing - box.placeholderWidth : 0
+        x: gapX + (box.placeholderWidth - width) / 2
         y: box.boxPadding
+        width: Math.max(2, Math.round(4 * box.screenView.s))
         height: box.thumbHeight
-        spacing: box.thumbSpacing
+        radius: width / 2
+        color: Kirigami.Theme.highlightColor
+    }
+
+    Item {
+        id: row
+        y: box.boxPadding
+        width: box.width
+        height: box.thumbHeight
 
         Repeater {
             id: thumbRepeater
@@ -54,8 +110,11 @@ Item {
                 required property int index
                 readonly property bool current: KWinComponents.Workspace.currentDesktop === desktop
 
+                x: box.thumbX(index)
                 width: box.thumbWidth
                 height: box.thumbHeight
+                // SLIDE_ANIMATION_TIME: thumbnails slide aside for the placeholder
+                Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutQuad } }
 
                 Item {
                     id: preview
