@@ -7,22 +7,22 @@
 #include <QProcess>
 #include <QStandardPaths>
 
-Launcher::Launcher(QObject *parent)
+KGnomeLauncher::KGnomeLauncher(QObject *parent)
     : QObject(parent)
 {
 }
 
-QString Launcher::iconPath(const QString &iconName)
+QString KGnomeLauncher::iconPath(const QString &iconName)
 {
     return IconResolver::resolve(iconName);
 }
 
-QString Launcher::moduleVersion()
+QString KGnomeLauncher::moduleVersion()
 {
     return QStringLiteral("0.1.0");
 }
 
-bool Launcher::launch(const QString &storageIdIn)
+bool KGnomeLauncher::launch(const QString &storageIdIn)
 {
     QString storageId = storageIdIn.trimmed();
     if (storageId.startsWith(QLatin1String("applications:"))) {

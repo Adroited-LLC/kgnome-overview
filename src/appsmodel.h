@@ -16,10 +16,10 @@ class KDirWatch;
  * favourites (kactivitymanagerd-statsrc ordering), or favoriteIds if set,
  * or a set of sensible defaults.
  */
-class AppsModel : public QAbstractListModel
+class KGnomeAppsModel : public QAbstractListModel
 {
     Q_OBJECT
-    QML_ELEMENT
+    QML_NAMED_ELEMENT(AppsModel)
 
     Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(bool favoritesOnly READ favoritesOnly WRITE setFavoritesOnly NOTIFY favoritesOnlyChanged)
@@ -40,8 +40,8 @@ public:
     };
     Q_ENUM(Roles)
 
-    explicit AppsModel(QObject *parent = nullptr);
-    ~AppsModel() override;
+    explicit KGnomeAppsModel(QObject *parent = nullptr);
+    ~KGnomeAppsModel() override;
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;

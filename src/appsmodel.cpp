@@ -35,21 +35,21 @@ QString statsrcPath()
 }
 }
 
-AppsModel::AppsModel(QObject *parent)
+KGnomeAppsModel::KGnomeAppsModel(QObject *parent)
     : QAbstractListModel(parent)
 {
-    connect(KSycoca::self(), &KSycoca::databaseChanged, this, &AppsModel::refresh);
+    connect(KSycoca::self(), &KSycoca::databaseChanged, this, &KGnomeAppsModel::refresh);
     reload();
 }
 
-AppsModel::~AppsModel() = default;
+KGnomeAppsModel::~KGnomeAppsModel() = default;
 
-int AppsModel::rowCount(const QModelIndex &parent) const
+int KGnomeAppsModel::rowCount(const QModelIndex &parent) const
 {
     return parent.isValid() ? 0 : int(m_visible.size());
 }
 
-QVariant AppsModel::data(const QModelIndex &index, int role) const
+QVariant KGnomeAppsModel::data(const QModelIndex &index, int role) const
 {
     if (!checkIndex(index, QAbstractItemModel::CheckIndexOption::IndexIsValid)) {
         return {};
@@ -78,7 +78,7 @@ QVariant AppsModel::data(const QModelIndex &index, int role) const
     return {};
 }
 
-QHash<int, QByteArray> AppsModel::roleNames() const
+QHash<int, QByteArray> KGnomeAppsModel::roleNames() const
 {
     return {
         {NameRole, "name"},
@@ -92,7 +92,7 @@ QHash<int, QByteArray> AppsModel::roleNames() const
     };
 }
 
-void AppsModel::setFavoritesOnly(bool on)
+void KGnomeAppsModel::setFavoritesOnly(bool on)
 {
     if (m_favoritesOnly == on) {
         return;
@@ -102,7 +102,7 @@ void AppsModel::setFavoritesOnly(bool on)
         m_watch = new KDirWatch(this);
         m_watch->addFile(statsrcPath());
         auto onChange = [this] {
-            QTimer::singleShot(200, this, &AppsModel::refresh);
+            QTimer::singleShot(200, this, &KGnomeAppsModel::refresh);
         };
         connect(m_watch, &KDirWatch::dirty, this, onChange);
         connect(m_watch, &KDirWatch::created, this, onChange);
@@ -111,7 +111,7 @@ void AppsModel::setFavoritesOnly(bool on)
     reload();
 }
 
-void AppsModel::setFavoriteIds(const QStringList &ids)
+void KGnomeAppsModel::setFavoriteIds(const QStringList &ids)
 {
     if (m_favoriteIds == ids) {
         return;
@@ -123,7 +123,7 @@ void AppsModel::setFavoriteIds(const QStringList &ids)
     }
 }
 
-void AppsModel::setFilterString(const QString &filter)
+void KGnomeAppsModel::setFilterString(const QString &filter)
 {
     if (m_filter == filter) {
         return;
@@ -136,7 +136,7 @@ void AppsModel::setFilterString(const QString &filter)
     Q_EMIT countChanged();
 }
 
-void AppsModel::setLimit(int limit)
+void KGnomeAppsModel::setLimit(int limit)
 {
     if (m_limit == limit) {
         return;
@@ -149,20 +149,20 @@ void AppsModel::setLimit(int limit)
     Q_EMIT countChanged();
 }
 
-bool AppsModel::launch(const QString &storageId) const
+bool KGnomeAppsModel::launch(const QString &storageId) const
 {
-    return Launcher::launch(storageId);
+    return KGnomeLauncher::launch(storageId);
 }
 
-bool AppsModel::launchRow(int row) const
+bool KGnomeAppsModel::launchRow(int row) const
 {
     if (row < 0 || row >= m_visible.size()) {
         return false;
     }
-    return Launcher::launch(m_all.at(m_visible.at(row)).storageId);
+    return KGnomeLauncher::launch(m_all.at(m_visible.at(row)).storageId);
 }
 
-QVariantMap AppsModel::get(int row) const
+QVariantMap KGnomeAppsModel::get(int row) const
 {
     if (row < 0 || row >= m_visible.size()) {
         return {};
@@ -178,13 +178,13 @@ QVariantMap AppsModel::get(int row) const
     };
 }
 
-void AppsModel::refresh()
+void KGnomeAppsModel::refresh()
 {
     IconResolver::clearCache();
     reload();
 }
 
-bool AppsModel::entryFromId(const QString &idIn, Entry &out)
+bool KGnomeAppsModel::entryFromId(const QString &idIn, Entry &out)
 {
     QString id = idIn;
     if (id.startsWith(QLatin1String("applications:"))) {
@@ -205,7 +205,7 @@ bool AppsModel::entryFromId(const QString &idIn, Entry &out)
     return true;
 }
 
-QStringList AppsModel::plasmaFavorites() const
+QStringList KGnomeAppsModel::plasmaFavorites() const
 {
     // Find the first Kickoff/Kicker applet so we pick its favourites ordering.
     QStringList instanceIds;
@@ -241,7 +241,7 @@ QStringList AppsModel::plasmaFavorites() const
     return {};
 }
 
-void AppsModel::reload()
+void KGnomeAppsModel::reload()
 {
     QVector<Entry> entries;
 
@@ -298,7 +298,7 @@ void AppsModel::reload()
     Q_EMIT countChanged();
 }
 
-void AppsModel::applyFilter()
+void KGnomeAppsModel::applyFilter()
 {
     m_visible.clear();
     const QString f = m_filter.trimmed();

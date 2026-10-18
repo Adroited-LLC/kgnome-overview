@@ -93,7 +93,7 @@ Item {
                     radius: Math.round(8 * box.screenView.s)
                     color: "transparent"
                     border.width: Math.round(3 * box.screenView.s)
-                    border.color: thumb.current ? "white" : Qt.rgba(1, 1, 1, area.containsMouse ? 0.45 : 0)
+                    border.color: thumb.current ? "white" : Qt.rgba(1, 1, 1, area.containsMouse ? 0.45 : 0.15)
                     Behavior on border.color { ColorAnimation { duration: 150 } }
                 }
 

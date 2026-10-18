@@ -12,12 +12,14 @@ QtObject {
     property string searchText: ""
     property var favoriteIds: []
 
-    readonly property KG.AppsModel apps: KG.AppsModel {}
-    readonly property KG.AppsModel favorites: KG.AppsModel {
+    // Typed as QtObject on purpose: Plasma's kicker plugin also has a C++
+    // class called AppsModel, which confuses QML's type check if both are loaded.
+    readonly property QtObject apps: KG.AppsModel {}
+    readonly property QtObject favorites: KG.AppsModel {
         favoritesOnly: true
         favoriteIds: backend.favoriteIds
     }
-    readonly property KG.AppsModel searchApps: KG.AppsModel {
+    readonly property QtObject searchApps: KG.AppsModel {
         filterString: backend.searchText
         limit: 12
     }
