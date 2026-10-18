@@ -219,9 +219,15 @@ qdbus org.kde.kglobalaccel /component/kwin invokeShortcut "Toggle GNOME Overview
   app or a grid icon into the dash to pin it at that position. Right-click
   (dash, grid, folders): New Window, Pin to Dash / Unpin, Quit (closes its
   windows, shown while running).
-- Favourites are shared two-way with Kickoff (KActivities favourites, the
-  same list and order Kickoff shows). Like GNOME, favourites are not shown in
-  the app grid (`HideFavoritesInGrid`).
+- The dash shows KDE's Favorites, shared two-way with Kickoff/Kicker
+  (KActivities favourites, the same list and order the launcher shows):
+  pinning, unpinning and reordering in the overview change that list live.
+  Unpinning also removes the app from the pinned launchers of the panel's
+  task manager, if it is pinned there (live, through plasmashell; set
+  `UnpinFromTaskManager=false` to keep them apart). Pinning in the dash only
+  adds it to the favourites, never to the task manager. Like GNOME,
+  favourites are not shown in the app grid (`HideFavoritesInGrid`); an
+  unpinned app shows up in the grid again right away.
 
 ### Show Apps
 
@@ -310,6 +316,14 @@ Settings…", or in kwinrc `[Effect-kgnomeoverview]`:
 - `FavoriteApps` (empty): comma-separated desktop ids for the dash, only used
   without `FavoritesClient`. If empty, the dash shows the Kickoff favourites
   read-only.
+- `UnpinFromTaskManager` (true): unpinning an app in the dash also unpins
+  it from every task manager / icons-only task manager (`launchers` entries
+  `applications:<id>.desktop` or a path to `<id>.desktop`; generic
+  `preferred://…` launchers such as `preferred://filemanager` are kept).
+  Runs `org.kde.PlasmaShell.evaluateScript` asynchronously; nothing to
+  restart.
+- `FavoritesSeeded`: written by an older version that kept the dash's own
+  list in `FavoriteApps`; ignored, safe to delete.
 - `HideFavoritesInGrid` (true): like GNOME, favourites aren't in the grid or
   folders (they keep their folder and position for when they are unpinned).
 - `DashIconSize` (64): largest dash icon size; GNOME's 48/32/24/22/16 are

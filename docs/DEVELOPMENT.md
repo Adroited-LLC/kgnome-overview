@@ -136,6 +136,22 @@ System Menu in a separate `plasmawindowed` process (fresh QML engine) and
 takes a screenshot; writing `expandRequest` in the applet config opens it
 from a script.
 
+## Favourites and the task manager
+
+- The dash's favourites are KDE's Favorites of the launcher in
+  `FavoritesClient` (Kickoff's `org.kde.plasma.kickoff.favorites.instance-N`),
+  read and written through Plasma's private `KAStatsFavoritesModel`
+  (`impl/Favorites.qml`). The links live in kactivitymanagerd's database
+  (`ResourceLink`), the order in `kactivitymanagerd-statsrc`
+  (`[Favorites-<client>-global]` and per activity).
+- `impl/TaskbarLaunchers.qml` removes an unpinned app from the task
+  managers' `General/launchers`: a desktop script sent with KWin's QML
+  `DBusCall` (asynchronous) to `org.kde.PlasmaShell.evaluateScript`; the
+  script prints JSON with what matched, logged as
+  `kgnome-overview: task manager launchers: …`. `query(id)` reports without
+  writing, e.g. `dev/drive.sh 'effect.ensureTaskbarLaunchers().query("org.kde.konsole")'`.
+  It is plain QML, so it works without a relogin (no C++ change).
+
 ## Development helpers
 
 - `dev/cycle.sh`: reinstall and reload the effect, show its journal lines.
