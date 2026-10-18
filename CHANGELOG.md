@@ -10,8 +10,15 @@ All notable changes to this project are documented here. The format follows
 - `BackgroundTint` setting ("Background tint" in the settings dialog,
   0-100 %, default 30): strength of the dark overlay over the blurred
   wallpaper; only used with `BlurBackground`.
+- Unpinning an app in the dash also removes it from the panel task
+  manager's pinned launchers (live, through plasmashell's `evaluateScript`;
+  `UnpinFromTaskManager`, default on). Pinning only adds to the favourites.
 
 ### Changed
+- The dash keeps using KDE's Favorites, shared with Kickoff/Kicker (pin,
+  unpin and reorder show there live); the short-lived separate dash list
+  (`FavoriteApps`/`FavoritesSeeded`, never released) was dropped. Leftover
+  `FavoritesSeeded` keys are ignored.
 - Lighter overview background over the blur (tint 30 % instead of 88 %),
   and `Esc` in the app grid closes the overview directly instead of going
   back to the window picker (differs from GNOME). PR #1 by @HUSTLRX.
