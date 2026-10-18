@@ -4,7 +4,7 @@
 # dev/drive.sh 'JS'  : run JS inside the effect (needs kwinrc DevHooks=true,
 # see Controller.runDevScript). In scope: effect, view (first screen), workspace.
 # Prints the result line from the journal.
-QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus)
+QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus || ls /usr/lib*/qt6/bin/qdbus /usr/lib/*/qt6/bin/qdbus 2>/dev/null | head -n1 || true)
 since=$(date "+%Y-%m-%d %H:%M:%S")
 kwriteconfig6 --file kwinrc --group Effect-kgnomeoverview --key DevScript "// $(date +%s%N)
 $1"

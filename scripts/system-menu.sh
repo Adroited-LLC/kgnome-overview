@@ -12,7 +12,7 @@
 #   scripts/system-menu.sh remove   remove every System Menu from panels and desktops
 # Idempotent. Exit 0 when plasmashell isn't running (nothing to do).
 set -euo pipefail
-QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus || true)
+QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus || ls /usr/lib*/qt6/bin/qdbus /usr/lib/*/qt6/bin/qdbus 2>/dev/null | head -n1 || true)
 APPLETSRC="${XDG_CONFIG_HOME:-$HOME/.config}/plasma-org.kde.plasma.desktop-appletsrc"
 ID=org.kgnome.systemsheet
 

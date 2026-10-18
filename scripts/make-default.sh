@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Make kgnome-overview the default overview (user config only, no root):
 # backs up the touched config files to backup/<timestamp>/ first; undo with
-# dev/restore-defaults.sh. Each step is idempotent.
-#   dev/make-default.sh            all steps
-#   dev/make-default.sh meta ...   only the named steps
+# scripts/restore-defaults.sh. Each step is idempotent.
+#   scripts/make-default.sh            all steps
+#   scripts/make-default.sh meta ...   only the named steps
 set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")/.."
-QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus)
+QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus || ls /usr/lib*/qt6/bin/qdbus /usr/lib/*/qt6/bin/qdbus 2>/dev/null | head -n1 || true)
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
 GROUP=Effect-kgnomeoverview
 
@@ -148,4 +148,4 @@ backup
 for s in "${STEPS[@]}"; do
     "step_$s"
 done
-echo "Done. Undo: dev/restore-defaults.sh"
+echo "Done. Undo: scripts/restore-defaults.sh"

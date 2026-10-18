@@ -21,8 +21,9 @@ PlasmoidItem {
                                            ? "Toggle GNOME Overview" : "Toggle GNOME App Grid"
 
     function open() {
-        // qdbus6 on some distributions, qdbus on Fedora
-        const cmd = "q=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus); "
+        // qdbus6, qdbus-qt6 or qdbus depending on the distribution (Debian: qt6/bin)
+        const cmd = "q=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus"
+                  + " || ls /usr/lib*/qt6/bin/qdbus /usr/lib/*/qt6/bin/qdbus 2>/dev/null | head -n1); "
                   + "\"$q\" org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invokeShortcut '"
                   + shortcutName + "'";
         executable.connectSource(cmd);

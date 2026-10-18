@@ -4,7 +4,7 @@
 # Print the virtual desktops and the windows on each (debug helper).
 # Runs a throwaway KWin script; output comes back through the journal.
 set -euo pipefail
-QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus)
+QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus || ls /usr/lib*/qt6/bin/qdbus /usr/lib/*/qt6/bin/qdbus 2>/dev/null | head -n1 || true)
 tag="kgnome-desktops-$$"
 js=$(mktemp --suffix=.js)
 cat > "$js" <<JS

@@ -6,7 +6,7 @@ set -euo pipefail
 
 PREFIX="${PREFIX:-$HOME/.local}"
 EFFECT_ID=kgnomeoverview
-QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus || true)
+QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus || ls /usr/lib*/qt6/bin/qdbus /usr/lib/*/qt6/bin/qdbus 2>/dev/null | head -n1 || true)
 
 if [[ -n "$QDBUS" ]] && "$QDBUS" org.kde.KWin /Effects >/dev/null 2>&1; then
     if [[ "$("$QDBUS" org.kde.KWin /Effects isEffectLoaded "$EFFECT_ID")" == "true" ]]; then
@@ -28,7 +28,7 @@ kpackagetool6 --type Plasma/Applet --remove org.kgnome.systemsheet 2>/dev/null |
 
 echo ">> Removing effect package"
 kpackagetool6 --type KWin/Effect --remove "$EFFECT_ID" 2>/dev/null || true
-# the panel launcher (put Kickoff back first: dev/restore-defaults.sh)
+# the panel launcher (put Kickoff back first: scripts/restore-defaults.sh)
 kpackagetool6 --type Plasma/Applet --remove org.kgnome.overview.showapps 2>/dev/null || true
 # pre-1.1 id of the same plasmoid
 kpackagetool6 --type Plasma/Applet --remove org.kgnome.overview.launcher 2>/dev/null || true

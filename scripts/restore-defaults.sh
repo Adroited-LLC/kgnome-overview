@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # SPDX-FileCopyrightText: 2026 Matt Hoffer <matt@adroited.com>
 # SPDX-License-Identifier: GPL-2.0-or-later
-# Undo dev/make-default.sh: put back the config files saved in
+# Undo scripts/make-default.sh: put back the config files saved in
 # backup/<timestamp>/ (the oldest, i.e. the state before the first make-default run, by default) and make KWin and plasmashell pick
 # them up without logging out.
-#   dev/restore-defaults.sh                 restore the oldest backup
-#   dev/restore-defaults.sh <timestamp>     restore backup/<timestamp>
+#   scripts/restore-defaults.sh                 restore the oldest backup
+#   scripts/restore-defaults.sh <timestamp>     restore backup/<timestamp>
 set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")/.."
-QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus)
+QDBUS=$(command -v qdbus6 || command -v qdbus-qt6 || command -v qdbus || ls /usr/lib*/qt6/bin/qdbus /usr/lib/*/qt6/bin/qdbus 2>/dev/null | head -n1 || true)
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
 
-TS=${1:-$(ls -1 backup | sort | head -n1)}
+TS=${1:-$(ls -1 backup 2>/dev/null | grep -v -- "-install$" | sort | head -n1)}
 SRC="backup/$TS"
 [[ -d "$SRC" ]] || { echo "no backup $SRC" >&2; exit 1; }
 echo ">> Restoring from $SRC"

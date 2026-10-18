@@ -482,7 +482,7 @@ QtObject {
             sequence: "Meta+O"
             onActivated: effect.toggleOverview()
         },
-        // What Meta alone invokes (dev/make-default.sh points kwinrc
+        // What Meta alone invokes (scripts/make-default.sh points kwinrc
         // ModifierOnlyShortcuts Meta here); no key of its own
         KWinComponents.ShortcutHandler {
             name: "Cycle GNOME Overview"

@@ -7,9 +7,9 @@ your favourites, all driven by one animated state value like GNOME's
 
 Installed with `install.sh` it runs side by side with Plasma's own Overview
 effect and leaves Meta+W, the Meta key on its own and the top-left screen
-corner alone. `dev/make-default.sh` makes it *the* overview, like on GNOME
+corner alone. `scripts/make-default.sh` makes it *the* overview, like on GNOME
 (Meta, top-left corner, Meta+W, 4-finger swipes, a Show Apps button in place
-of Kickoff); `dev/restore-defaults.sh` undoes that. See
+of Kickoff); `scripts/restore-defaults.sh` undoes that. See
 [Making it the default](#making-it-the-default).
 
 License: GPL-2.0-or-later. The layout logic and constants are ported from GNOME
@@ -201,10 +201,10 @@ qdbus org.kde.KWin /KWin reconfigure
 ## Making it the default
 
 ```sh
-dev/make-default.sh                 # all steps
-dev/make-default.sh meta corner     # only some: meta corner builtin gestures panel
-dev/restore-defaults.sh             # undo (oldest backup = the state before any change)
-dev/restore-defaults.sh backup/<timestamp>
+scripts/make-default.sh                 # all steps
+scripts/make-default.sh meta corner     # only some: meta corner builtin gestures panel
+scripts/restore-defaults.sh             # undo (oldest backup = the state before any change)
+scripts/restore-defaults.sh backup/<timestamp>
 ```
 
 Every run of `make-default.sh` first copies `kwinrc`, `kglobalshortcutsrc`,
