@@ -13,8 +13,14 @@ All notable changes to this project are documented here. The format follows
 - Unpinning an app in the dash also removes it from the panel task
   manager's pinned launchers (live, through plasmashell's `evaluateScript`;
   `UnpinFromTaskManager`, default on). Pinning only adds to the favourites.
+- Like GNOME, a dragged window (or app icon) shrinks as it approaches the
+  workspace thumbnails or the app grid's workspace strip, down to about its
+  size in a thumbnail, and grows back when moved away or dropped.
+- `dev/sheet-anim.sh`: frame-by-frame check of the System Menu animations.
 
 ### Changed
+- The trailing empty desktop thumbnail no longer shows a "+" badge (like
+  GNOME); dropping on it still puts the window/app on a new desktop.
 - The dash keeps using KDE's Favorites, shared with Kickoff/Kicker (pin,
   unpin and reorder show there live); the short-lived separate dash list
   (`FavoriteApps`/`FavoritesSeeded`, never released) was dropped. Leftover
@@ -24,6 +30,11 @@ All notable changes to this project are documented here. The format follows
   back to the window picker (differs from GNOME). PR #1 by @HUSTLRX.
 
 ### Fixed
+- System Menu: expanding and collapsing an inline menu (Wi-Fi, Bluetooth,
+  Power Mode, Wired, VPN, Power Off, Sound Output) glitched the area below
+  the sliders: while a toggle menu closed, its card jumped to the first
+  toggle row and squashed it, and the menus' gaps appeared/disappeared in one
+  step. All inline menus now share one eased expand/collapse (Expander).
 - The app menu's Pin to Dash, Unpin, New Window and Quit did nothing (grid,
   folders and dash): the menu closed before the action ran and the action
   then used an empty app id (Pin/Unpin could add a bogus
