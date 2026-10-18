@@ -17,7 +17,19 @@ Rectangle {
     property real size: 22
 
     readonly property QtObject dyn: effect ? effect.dyn : null
-    readonly property bool closable: dyn !== null && dyn.revision >= 0 && effect.desktopCount > 1 && dyn.canClose(desktop)
+    // updated imperatively: canClose() reads window lists that have no
+    // change signals (a binding would warn about non-bindable properties)
+    property bool closable: false
+    function updateClosable() {
+        closable = dyn !== null && effect.desktopCount > 1 && dyn.canClose(desktop);
+    }
+    onDesktopChanged: updateClosable()
+    onShownChanged: if (shown) updateClosable()
+    Component.onCompleted: updateClosable()
+    Connections {
+        target: button.dyn
+        function onRevisionChanged() { button.updateClosable(); }
+    }
 
     width: size
     height: size
