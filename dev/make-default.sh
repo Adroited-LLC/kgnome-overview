@@ -36,7 +36,26 @@ step_meta() {
     echo "   $(kreadconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta)"
 }
 
-STEPS=(meta)
+# 2. Hot corner: free the built-in Overview's edges, top-left goes to ours
+step_corner() {
+    echo ">> Top-left hot corner -> GNOME overview"
+    # 9 = ElectricNone (KWin's ElectricBorder enum; 7 = TopLeft)
+    kwriteconfig6 --file kwinrc --group Effect-overview --key BorderActivate 9
+    kwriteconfig6 --file kwinrc --group Effect-overview --key GridBorderActivate 9
+    if [[ "$(kreadconfig6 --file kwinrc --group ElectricBorders --key TopLeft)" != "" ]]; then
+        kwriteconfig6 --file kwinrc --group ElectricBorders --key TopLeft --delete
+    fi
+    kwriteconfig6 --file kwinrc --group "$GROUP" --key HotCorner 1
+    kwriteconfig6 --file kwinrc --group "$GROUP" --key TopRightCorner --delete
+    reconfigure
+    "$QDBUS" org.kde.KWin /Effects reconfigureEffect overview >/dev/null 2>&1 || true
+    "$QDBUS" org.kde.KWin /Effects reconfigureEffect kgnomeoverview >/dev/null
+    echo "   Effect-overview BorderActivate=$(kreadconfig6 --file kwinrc --group Effect-overview --key BorderActivate)" \
+         "GridBorderActivate=$(kreadconfig6 --file kwinrc --group Effect-overview --key GridBorderActivate)" \
+         "ours HotCorner=$(kreadconfig6 --file kwinrc --group "$GROUP" --key HotCorner)"
+}
+
+STEPS=(meta corner)
 [[ $# -gt 0 ]] && STEPS=("$@")
 backup
 for s in "${STEPS[@]}"; do

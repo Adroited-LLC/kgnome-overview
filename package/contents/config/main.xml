@@ -48,9 +48,9 @@
             <label>Saved app grid order (desktop ids, folders as folder:Name). Written by the overview.</label>
             <default></default>
         </entry>
-        <entry name="TopRightCorner" type="Bool">
-            <label>Toggle the overview from the top-right screen corner.</label>
-            <default>false</default>
+        <entry name="HotCorner" type="Int">
+            <label>Screen corner that toggles the overview: 0 none, 1 top-left (GNOME), 2 top-right, 3 bottom-left, 4 bottom-right.</label>
+            <default>1</default>
         </entry>
         <entry name="GestureFingers" type="Int">
             <label>Fingers for the touchpad swipe gestures (0 = off). KWin's own overview uses 4.</label>

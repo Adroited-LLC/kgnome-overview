@@ -31,11 +31,20 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="0" colspan="2">
-    <widget class="QCheckBox" name="kcfg_TopRightCorner">
+   <item row="2" column="0">
+    <widget class="QLabel" name="labelHotCorner">
      <property name="text">
-      <string>Toggle the overview from the top-right screen corner</string>
+      <string>Hot corner:</string>
      </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QComboBox" name="kcfg_HotCorner">
+     <item><property name="text"><string>None</string></property></item>
+     <item><property name="text"><string>Top left (GNOME)</string></property></item>
+     <item><property name="text"><string>Top right</string></property></item>
+     <item><property name="text"><string>Bottom left</string></property></item>
+     <item><property name="text"><string>Bottom right</string></property></item>
     </widget>
    </item>
    <item row="4" column="0">

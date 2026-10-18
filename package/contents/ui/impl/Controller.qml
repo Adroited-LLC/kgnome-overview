@@ -55,6 +55,7 @@ QtObject {
         sharedFavorites = c.status === Component.Ready ? c.createObject(effect, {client: favoritesClient}) : null;
         console.info("kgnome-overview: favourites", sharedFavorites ? "shared with " + favoritesClient : "from FavoriteApps (" + c.errorString().trim() + ")");
     }
+    readonly property int hotCorner: (cfg && cfg.HotCorner !== undefined) ? cfg.HotCorner : 1
     readonly property int gestureFingers: (cfg && cfg.GestureFingers !== undefined) ? cfg.GestureFingers : 3
     // App grid size: IconSize px (0 = GNOME's automatic 96..16), Columns
     // (0 = GNOME's 8x3/6x4/4x6/3x8 modes), Rows (0 = automatic)
@@ -470,9 +471,12 @@ QtObject {
                 onCancelled: { update(last, true, last > 0.5); last = 0; }
             }
         },
+        // GNOME's hot corner (top left by default, HotCorner setting)
         KWinComponents.ScreenEdgeHandler {
-            enabled: effect.cfg ? effect.cfg.TopRightCorner === true : false
-            edge: KWinComponents.ScreenEdgeHandler.TopRightEdge
+            enabled: effect.hotCorner > 0
+            edge: [KWinComponents.ScreenEdgeHandler.NoEdge, KWinComponents.ScreenEdgeHandler.TopLeftEdge,
+                   KWinComponents.ScreenEdgeHandler.TopRightEdge, KWinComponents.ScreenEdgeHandler.BottomLeftEdge,
+                   KWinComponents.ScreenEdgeHandler.BottomRightEdge][Math.max(0, Math.min(4, effect.hotCorner))]
             onActivated: effect.toggleOverview()
         }
     ]
