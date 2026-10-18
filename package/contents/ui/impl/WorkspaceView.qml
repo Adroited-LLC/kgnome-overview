@@ -137,7 +137,8 @@ Item {
                     id: content
                     parent: windowLayer
                     visible: !cell.window.skipSwitcher && (!cell.window.minimized || cell.mode > 0)
-                    opacity: cell.window.minimized ? cell.mode : 1
+                    // DRAGGING_WINDOW_OPACITY while it is being dragged
+                    opacity: (cell.window.minimized ? cell.mode : 1) * (ws.screenView.dragWindow === cell.window ? 100 / 255 : 1)
                     z: cell.hovered ? 100000 : cell.window.stackingOrder
 
                     // windowPreview.js WINDOW_ACTIVE_SIZE_INC: grow a little on hover
@@ -233,7 +234,46 @@ Item {
                         z: -1
                         enabled: ws.screenView.interactive
                         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+                        preventStealing: true
+                        // drag a window onto another workspace (peek, strip or thumbnail)
+                        property point pressPos
+                        property bool dragging: false
+                        property bool dragged: false
+                        onPressed: mouse => {
+                            pressPos = mapToItem(ws.screenView, mouse.x, mouse.y);
+                            dragging = false;
+                            dragged = false;
+                        }
+                        onPositionChanged: mouse => {
+                            if (!(pressedButtons & Qt.LeftButton)) {
+                                return;
+                            }
+                            const p = mapToItem(ws.screenView, mouse.x, mouse.y);
+                            if (!dragging && Math.hypot(p.x - pressPos.x, p.y - pressPos.y) > Qt.styleHints.startDragDistance) {
+                                dragging = true;
+                                dragged = true;
+                                ws.screenView.beginWindowDrag(cell.window, p);
+                            }
+                            if (dragging) {
+                                ws.screenView.moveWindowDrag(p);
+                            }
+                        }
+                        onReleased: mouse => {
+                            if (dragging) {
+                                dragging = false;
+                                ws.screenView.endWindowDrag(mapToItem(ws.screenView, mouse.x, mouse.y));
+                            }
+                        }
+                        onCanceled: {
+                            if (dragging) {
+                                dragging = false;
+                                ws.screenView.endWindowDrag(null);
+                            }
+                        }
                         onClicked: mouse => {
+                            if (dragged) {
+                                return;
+                            }
                             if (mouse.button === Qt.MiddleButton && cell.mode > 0.99) {
                                 cell.window.closeWindow();
                             } else if (cell.mode < 0.99) {

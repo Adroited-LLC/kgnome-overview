@@ -22,13 +22,30 @@ Item {
     readonly property real thumbSpacing: Math.round(6 * screenView.s)
     readonly property real thumbScale: thumbHeight / targetScreen.geometry.height
 
+    // desktop under a point in this item's coordinates, or null
+    function desktopAt(x, y) {
+        if (y < 0 || y > height) {
+            return null;
+        }
+        const p = mapToItem(row, x, y);
+        for (let i = 0; i < thumbRepeater.count; ++i) {
+            const t = thumbRepeater.itemAt(i);
+            if (t && p.x >= t.x - thumbSpacing / 2 && p.x <= t.x + t.width + thumbSpacing / 2) {
+                return t.desktop;
+            }
+        }
+        return null;
+    }
+
     Row {
+        id: row
         anchors.horizontalCenter: parent.horizontalCenter
         y: box.boxPadding
         height: box.thumbHeight
         spacing: box.thumbSpacing
 
         Repeater {
+            id: thumbRepeater
             model: KWinComponents.VirtualDesktopModel {}
 
             delegate: Item {

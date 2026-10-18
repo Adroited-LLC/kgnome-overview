@@ -69,6 +69,45 @@ FocusScope {
         return L.scaleRect(r, L.lerp(L.WORKSPACE_INACTIVE_SCALE, 1, 1 - distance));
     }
 
+    // --- Window drag and drop to another workspace -------------------------------
+    property QtObject dragWindow: null
+    property point dragPoint
+    function beginWindowDrag(window, p) {
+        dragWindow = window;
+        dragPoint = p;
+    }
+    function moveWindowDrag(p) {
+        dragPoint = p;
+    }
+    function desktopAtPoint(p) {
+        if (thumbnails.visible) {
+            const tp = mapToItem(thumbnails, p.x, p.y);
+            const d = thumbnails.desktopAt(tp.x, tp.y);
+            if (d) {
+                return d;
+            }
+        }
+        const desktops = effect.desktops;
+        for (let i = 0; i < desktops.length; ++i) {
+            const r = workspaceRect(i);
+            if (p.x >= r.x && p.x <= r.x + r.width && p.y >= r.y && p.y <= r.y + r.height) {
+                return desktops[i];
+            }
+        }
+        return null;
+    }
+    function endWindowDrag(p) {
+        const window = dragWindow;
+        dragWindow = null;
+        if (!window || !p) {
+            return;
+        }
+        const desktop = desktopAtPoint(p);
+        if (desktop && !(window.desktops.length === 1 && window.desktops[0] === desktop)) {
+            window.desktops = [desktop];
+        }
+    }
+
     function focusSearch() {
         searchEntry.focusInput();
     }
@@ -309,6 +348,19 @@ FocusScope {
         y: root.height - root.dashHeight * root.pickerFactor
         opacity: root.pickerFactor
         enabled: root.interactive
+    }
+
+    // drag proxy (windowPreview.js WINDOW_DND_SIZE 256)
+    KWinComponents.WindowThumbnail {
+        id: dragProxy
+        z: 90
+        visible: root.dragWindow !== null
+        wId: root.dragWindow ? root.dragWindow.internalId : ""
+        readonly property real f: root.dragWindow ? Math.min(1, 256 * root.s / Math.max(root.dragWindow.width, root.dragWindow.height)) : 1
+        width: root.dragWindow ? root.dragWindow.width * f : 0
+        height: root.dragWindow ? root.dragWindow.height * f : 0
+        x: root.dragPoint.x - width / 2
+        y: root.dragPoint.y - height / 2
     }
 
     // --- App folder dialog ---------------------------------------------------------
