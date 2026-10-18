@@ -72,10 +72,31 @@ FocusScope {
 
     // --- Window drag and drop to another workspace -------------------------------
     property QtObject dragWindow: null
+    property QtObject dragProxyWindow: null   // stays set while the proxy fades out
     property point dragPoint
     function beginWindowDrag(window, p) {
         dragWindow = window;
+        dragProxyWindow = window;
         dragPoint = p;
+    }
+
+    // Like GNOME, the dragged window (or app icon) shrinks as it approaches
+    // the workspace thumbnails at the top (window picker) or the workspace
+    // strip (app grid), so the drop target is clearer: full size from 1/3 of
+    // the screen height below the strip's bottom edge, minimum size at the
+    // edge and over the strip. Returns 0 (far) .. 1 (at/over the strip).
+    readonly property real stripBottom: gridFactor > 0.5
+                                        ? (effect.desktopCount > 0 ? workspaceRect(0).y + workspaceRect(0).height : -1)
+                                        : (thumbnailsShown ? thumbnails.y + thumbnails.height : -1)
+    readonly property real stripHeight: gridFactor > 0.5
+                                        ? (effect.desktopCount > 0 ? workspaceRect(0).height : 0)
+                                        : thumbnailsHeight
+    function stripApproach(p) {
+        if (stripBottom < 0 || stripHeight <= 0) {
+            return 0;
+        }
+        const range = Math.max(1, height / 3);
+        return L.clamp(1 - (p.y - stripBottom) / range, 0, 1);
     }
     function moveWindowDrag(p) {
         dragPoint = p;
@@ -160,6 +181,7 @@ FocusScope {
     function endWindowDrag(p) {
         const window = dragWindow;
         dragWindow = null;
+        dragProxyFade.restart();
         showDropTarget(null);
         if (!window || !p) {
             return;
@@ -629,17 +651,34 @@ FocusScope {
         enabled: root.interactive
     }
 
-    // drag proxy (windowPreview.js WINDOW_DND_SIZE 256)
+    // drag proxy (windowPreview.js WINDOW_DND_SIZE 256), shrinking towards
+    // about a thumbnail's size near the workspace strip (stripApproach). After
+    // a drop or cancel it grows back to full size while it fades out.
     KWinComponents.WindowThumbnail {
         id: dragProxy
         z: 90
-        visible: root.dragWindow !== null
-        wId: root.dragWindow ? root.dragWindow.internalId : ""
-        readonly property real f: root.dragWindow ? Math.min(1, 256 * root.s / Math.max(root.dragWindow.width, root.dragWindow.height)) : 1
-        width: root.dragWindow ? root.dragWindow.width * f : 0
-        height: root.dragWindow ? root.dragWindow.height * f : 0
+        readonly property QtObject win: root.dragProxyWindow
+        visible: win !== null && opacity > 0
+        wId: win ? win.internalId : ""
+        readonly property real f: win ? Math.min(1, 256 * root.s / Math.max(1, win.width, win.height)) : 1
+        width: win ? win.width * f : 0
+        height: win ? win.height * f : 0
         x: root.dragPoint.x - width / 2
         y: root.dragPoint.y - height / 2
+        // smallest scale: about the window's size inside a workspace
+        // thumbnail of the strip (thumbnail scale = strip height / screen
+        // height), at most 75 % so it always visibly shrinks
+        readonly property real minScale: win ? L.clamp(Math.max(win.width, win.height) * root.stripHeight / Math.max(1, root.height)
+                                                       / Math.max(1, width, height), 0.2, 0.75) : 1
+        scale: root.dragWindow !== null ? L.lerp(1, minScale, root.stripApproach(root.dragPoint)) : 1
+        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+        opacity: root.dragWindow !== null ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+    }
+    Timer {
+        id: dragProxyFade
+        interval: 200
+        onTriggered: if (root.dragWindow === null) root.dragProxyWindow = null
     }
 
     // --- App folder dialog ---------------------------------------------------------
@@ -661,6 +700,9 @@ FocusScope {
         x: root.iconDragPoint.x - width / 2
         y: root.iconDragPoint.y - height / 2
         readonly property var entry: root.iconDrag ? root.iconDrag.entry : null
+        // apps can be dropped on a workspace: shrink near the strip like a window
+        scale: entry !== null && entry.kind === "app" ? L.lerp(1, 0.5, root.stripApproach(root.iconDragPoint)) : 1
+        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
         AsyncIcon {
             anchors.fill: parent
             visible: parent.entry !== null && parent.entry.kind === "app"
